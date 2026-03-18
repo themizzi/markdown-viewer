@@ -1,0 +1,22 @@
+{
+  "name": "markdown-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal Electron + TypeScript markdown viewer with Mermaid and file watching",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && electron dist/main.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "electron": "^36.0.0",
+    "github-markdown-css": "^5.8.1",
+    "marked": "^15.0.0",
+    "mermaid": "^11.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}
