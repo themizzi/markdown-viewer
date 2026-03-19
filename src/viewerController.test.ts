@@ -160,4 +160,83 @@ describe("ViewerController", () => {
       },
     ]);
   });
+
+  it("opens a new file by closing the previous watch handle before starting a new watch", async () => {
+    // GIVEN
+    volume.mkdirSync("/path/to", { recursive: true });
+    volume.writeFileSync("/path/to/file.md", "# Initial");
+    await controller.start("/path/to/file.md");
+    const firstWatchHandle = fakeWatchHandle;
+
+    volume.mkdirSync("/other/path", { recursive: true });
+    volume.writeFileSync("/other/path/file.md", "# New File");
+
+    // WHEN
+    await controller.openFile("/other/path/file.md");
+
+    // THEN
+    expect(firstWatchHandle.close).toHaveBeenCalled();
+    expect(fakeFileWatcher.watch).toHaveBeenCalledTimes(2);
+    expect(fakeFileWatcher.watch).toHaveBeenNthCalledWith(
+      2,
+      "/other/path/file.md",
+      expect.any(Function)
+    );
+  });
+
+  it("opens a new file by reading and rendering the newly selected file", async () => {
+    // GIVEN
+    volume.mkdirSync("/path/to", { recursive: true });
+    volume.writeFileSync("/path/to/file.md", "# Initial");
+    await controller.start("/path/to/file.md");
+
+    volume.mkdirSync("/other/path", { recursive: true });
+    volume.writeFileSync("/other/path/file.md", "# New File");
+
+    // WHEN
+    await controller.openFile("/other/path/file.md");
+
+    // THEN
+    expect(capturedRenders).toEqual(["# Initial", "# New File"]);
+  });
+
+  it("opens a new file by updating baseHref to the selected file directory", async () => {
+    // GIVEN
+    volume.mkdirSync("/path/to", { recursive: true });
+    volume.writeFileSync("/path/to/file.md", "# Initial");
+    await controller.start("/path/to/file.md");
+
+    volume.mkdirSync("/other/path", { recursive: true });
+    volume.writeFileSync("/other/path/file.md", "# New File");
+
+    // WHEN
+    await controller.openFile("/other/path/file.md");
+
+    // THEN
+    const document = controller.getHtml();
+    expect(document.baseHref).toBe("file:///other/path/");
+  });
+
+  it("opens a new file by publishing the new rendered document", async () => {
+    // GIVEN
+    volume.mkdirSync("/path/to", { recursive: true });
+    volume.writeFileSync("/path/to/file.md", "# Initial");
+    await controller.start("/path/to/file.md");
+
+    publishedDocuments.length = 0;
+
+    volume.mkdirSync("/other/path", { recursive: true });
+    volume.writeFileSync("/other/path/file.md", "# New File");
+
+    // WHEN
+    await controller.openFile("/other/path/file.md");
+
+    // THEN
+    expect(publishedDocuments).toEqual([
+      {
+        html: "<rendered># New File</rendered>",
+        baseHref: "file:///other/path/",
+      },
+    ]);
+  });
 });

@@ -1,6 +1,12 @@
-import { When, Then } from '@wdio/cucumber-framework';
+import { When, Then, Given } from '@wdio/cucumber-framework';
 import { browser, expect } from '@wdio/globals';
 import { execSync } from 'node:child_process';
+
+Given(/the app is showing the initial test markdown document/, async () => {
+  const appElement = await browser.$('#app');
+  const text = await appElement.getText();
+  expect(text).toContain('OPEN_FILE_INITIAL_FIXTURE');
+});
 
 When(/the user clicks File Open/, async () => {
   // Trigger the file-open menu item from Electron app menu
@@ -25,6 +31,76 @@ When(/the user clicks File Open/, async () => {
   // Wait for dialog to appear
   await browser.pause(500);
 });
+
+When(/the user selects the deterministic target file in the Open File dialog/, async () => {
+  const fixturePath = '/Users/themizzi/GitHub/markdown-viewer/e2e/fixtures';
+  
+  // AppleScript to navigate to the fixtures directory and select open-dialog-target.md
+  const script = `-- Navigate to fixtures directory and select the target file
+tell application "System Events"
+  tell process "markdown-viewer"
+    -- Wait for Open dialog to appear (up to 10 seconds)
+    set dialogFound to false
+    repeat with i from 1 to 50
+      try
+        if (exists sheet 1 of window 1) then
+          set dialogFound to true
+          exit repeat
+        end if
+      end try
+      delay 0.2
+    end repeat
+    
+    if not dialogFound then
+      error "Open File dialog did not appear within 10 seconds"
+    end if
+    
+    -- Press Command+Shift+G to open "Go to Folder" dialog
+    key code 5 using {command down, shift down}
+    delay 0.5
+    
+    -- Type the fixtures directory path
+    set the clipboard to "${fixturePath}"
+    key code 9 using {command down}  -- Paste
+    delay 0.3
+    
+    -- Press Enter to navigate
+    key code 36  -- Return key
+    delay 1.0
+    
+    -- Type the filename to select it
+    set the clipboard to "open-dialog-target.md"
+    key code 9 using {command down}  -- Paste
+    delay 0.3
+    
+    -- Press Enter to select the file
+    key code 36  -- Return key
+    delay 0.5
+  end tell
+end tell`;
+
+  try {
+    execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    let errorMessage = `Failed to select file in Open File dialog: ${message}`;
+    
+    // Check for AppleScript permissions error
+    if (message.includes('Not authorized') || message.includes('permission')) {
+      errorMessage = `AppleScript permissions blocked automation. Please enable System Events in Security & Privacy settings.`;
+    }
+    
+    const err = new Error(errorMessage);
+    if (error instanceof Error) {
+      err.stack = error.stack;
+    }
+    throw err;
+  }
+  
+  // Wait for file to be loaded
+  await browser.pause(1000);
+});
+
 
 When(/the user clicks Cancel on the Open File dialog/, async () => {
   const script = `-- Press Escape to close the Open File dialog
@@ -77,4 +153,10 @@ end tell`;
     }
     throw err;
   }
+});
+
+Then(/the app shows the selected markdown document/, async () => {
+  const appElement = await browser.$('#app');
+  const text = await appElement.getText();
+  expect(text).toContain('OPEN_FILE_TARGET_FIXTURE');
 });

@@ -10,6 +10,7 @@ import { MarkedMarkdownService } from "./markdownService";
 import { ViewerController } from "./viewerController";
 import { createApplicationMenu } from "./applicationMenu";
 import { showOpenFileDialog } from "./openFileDialog";
+import { openFileFlow } from "./openFileFlow";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
@@ -46,8 +47,16 @@ function createWindow(): BrowserWindow {
   void window.loadFile(path.join(__dirname, "../src/index.html"));
 
   const menu = createApplicationMenu(() => {
-    void showOpenFileDialog().catch((error) => {
-      console.error("Failed to open file dialog:", error);
+    void openFileFlow(
+      () => controller?.getFocusedFilePath() ?? "",
+      showOpenFileDialog,
+      async (filePath) => {
+        if (controller) {
+          await controller.openFile(filePath);
+        }
+      }
+    ).catch((error) => {
+      console.error("Failed to open file:", error);
     });
   });
   Menu.setApplicationMenu(menu);

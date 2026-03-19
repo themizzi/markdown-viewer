@@ -1,3 +1,5 @@
-# Relative Image
+# Initial Test Document
 
-![Fixture image](./sample.png)
+OPEN_FILE_INITIAL_FIXTURE
+
+This is the initial markdown document.
