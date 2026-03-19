@@ -30,21 +30,6 @@ npm start -- ./path/to/file.md
 
 If no file is specified, it defaults to `README.md` in the current directory.
 
-## Project Structure
-
-```
-src/
-  main.ts           - Electron main process
-  preload.ts        - Preload script for IPC
-  renderer.ts       - Browser-side rendering logic
-  index.html        - HTML shell
-  styles.css        - Basic styling
-  contracts.ts      - TypeScript interfaces
-  fileService.ts   - File reading and watching
-  markdownService.ts - Markdown to HTML rendering
-  viewerController.ts - Application orchestration
-```
-
 ## License
 
 MIT
