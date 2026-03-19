@@ -1,6 +1,4 @@
-import { promises as fs } from "node:fs";
-import chokidar from "chokidar";
-import type { FileReader, FileWatcher, WatchHandle } from "./contracts";
+import type { FileWatcher, WatchHandle } from "./contracts";
 
 class ChokidarWatchHandle implements WatchHandle {
   constructor(private readonly closeFn: () => Promise<void>) {}
@@ -10,17 +8,18 @@ class ChokidarWatchHandle implements WatchHandle {
   }
 }
 
-export class FileService implements FileReader, FileWatcher {
-  async read(filePath: string): Promise<string> {
-    try {
-      return await fs.readFile(filePath, "utf8");
-    } catch {
-      return `# File not found\n\n\`${filePath}\``;
-    }
-  }
+type ChokidarInstance = {
+  watch(path: string, options?: object): {
+    on(event: string, callback: () => void): void;
+    close(): Promise<void>;
+  };
+};
+
+export class FileWatcherService implements FileWatcher {
+  constructor(private readonly chokidar: ChokidarInstance) {}
 
   async watch(filePath: string, onChange: () => void): Promise<WatchHandle> {
-    const watcher = chokidar.watch(filePath, {
+    const watcher = this.chokidar.watch(filePath, {
       ignoreInitial: true,
       awaitWriteFinish: {
         stabilityThreshold: 150,

@@ -1,5 +1,3 @@
-export {};
-
 declare global {
   interface Window {
     viewerApi: {
@@ -13,47 +11,40 @@ declare global {
   }
 }
 
-const root = document.getElementById("app");
+import type { ViewerApi } from "./contracts";
+import { HtmlRenderer } from "./htmlRenderer";
+import { MermaidRenderer } from "./mermaidRenderer";
 
-if (!root) {
-  throw new Error("Missing #app element");
+class AppBootstrap {
+  private readonly viewerApi: ViewerApi;
+  private readonly htmlRenderer: HtmlRenderer;
+
+  constructor(viewerApi: ViewerApi, htmlRenderer: HtmlRenderer) {
+    this.viewerApi = viewerApi;
+    this.htmlRenderer = htmlRenderer;
+  }
+
+  async start(): Promise<void> {
+    const initialHtml = await this.viewerApi.getHtml();
+    await this.htmlRenderer.render(initialHtml);
+
+    this.viewerApi.onHtmlUpdated((nextHtml: string) => {
+      void this.htmlRenderer.render(nextHtml);
+    });
+  }
 }
 
-const rootElement = root as HTMLElement;
+function createApp(viewerApi: ViewerApi, mermaid: unknown): AppBootstrap {
+  const mermaidRenderer = new MermaidRenderer(mermaid as never);
+  mermaidRenderer.initialize();
 
-window.mermaid.initialize({
-  startOnLoad: false,
-  securityLevel: "strict",
-  theme: "default"
-});
+  const htmlRenderer = new HtmlRenderer("app", [mermaidRenderer]);
 
-function hydrateMermaid(container: HTMLElement): void {
-  const codeBlocks = container.querySelectorAll("pre > code.language-mermaid");
-
-  codeBlocks.forEach((code) => {
-    const pre = code.parentElement;
-    if (!pre) return;
-
-    const div = document.createElement("div");
-    div.className = "mermaid";
-    div.textContent = code.textContent ?? "";
-    pre.replaceWith(div);
-  });
+  return new AppBootstrap(viewerApi, htmlRenderer);
 }
 
-async function render(html: string): Promise<void> {
-  rootElement.innerHTML = html;
-  hydrateMermaid(rootElement);
-  await Promise.resolve(window.mermaid.run({ querySelector: ".mermaid" }));
-}
+const mermaidApi = window.mermaid as never;
+const viewerApi: ViewerApi = window.viewerApi;
 
-async function bootstrap(): Promise<void> {
-  const initialHtml = await window.viewerApi.getHtml();
-  await render(initialHtml);
-
-  window.viewerApi.onHtmlUpdated((nextHtml: string) => {
-    void render(nextHtml);
-  });
-}
-
-void bootstrap();
+const app = createApp(viewerApi, mermaidApi);
+void app.start();

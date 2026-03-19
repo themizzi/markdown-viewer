@@ -1,6 +1,10 @@
 import path from "node:path";
+import { promises as fs } from "node:fs";
 import { app, BrowserWindow, ipcMain } from "electron";
-import { FileService } from "./fileService";
+import chokidar from "chokidar";
+import { marked } from "marked";
+import { FileReaderService } from "./fileReader";
+import { FileWatcherService } from "./fileWatcher";
 import { MarkedMarkdownService } from "./markdownService";
 import { ViewerController } from "./viewerController";
 
@@ -29,12 +33,15 @@ app.whenReady().then(async () => {
   mainWindow = createWindow();
 
   const filePath = path.resolve(process.cwd(), process.argv[2] ?? "README.md");
-  const fileService = new FileService();
-  const markdownService = new MarkedMarkdownService();
+  const fileReader = new FileReaderService(fs);
+  const fileWatcher = new FileWatcherService(chokidar);
+
+  marked.setOptions({ gfm: true });
+  const markdownService = new MarkedMarkdownService(marked);
 
   controller = new ViewerController(
-    fileService,
-    fileService,
+    fileReader,
+    fileWatcher,
     markdownService,
     (html) => {
       if (mainWindow && !mainWindow.isDestroyed()) {

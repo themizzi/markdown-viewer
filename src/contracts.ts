@@ -13,3 +13,18 @@ export interface FileWatcher {
 export interface MarkdownRenderer {
   render(markdown: string): string;
 }
+
+export interface MermaidApi {
+  initialize(config: Record<string, unknown>): void;
+  run(options?: Record<string, unknown>): Promise<void> | void;
+}
+
+export interface ViewerApi {
+  getHtml(): Promise<string>;
+  onHtmlUpdated(handler: (html: string) => void): () => void;
+}
+
+export interface DiagramRenderer {
+  hydrate(container: HTMLElement): void;
+  initialize(): void;
+}

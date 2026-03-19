@@ -1,12 +1,12 @@
 import { marked } from "marked";
 import type { MarkdownRenderer } from "./contracts";
 
+type MarkedInstance = typeof marked;
+
 export class MarkedMarkdownService implements MarkdownRenderer {
-  constructor() {
-    marked.setOptions({ gfm: true });
-  }
+  constructor(private readonly marked: MarkedInstance) {}
 
   render(markdown: string): string {
-    return marked.parse(markdown) as string;
+    return this.marked.parse(markdown) as string;
   }
 }
