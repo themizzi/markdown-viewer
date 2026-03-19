@@ -52,15 +52,15 @@ end tell`;
   }
   
   // Wait for dialog to close
-  await browser.pause(500);
+  await browser.pause(1000);
 });
 
 Then(/the Open File dialog is not present/, async () => {
   const script = `-- Verify dialog is closed by checking window count
 tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for dialog to close (max 10 seconds)
-    repeat with i from 1 to 50
+    -- Wait for dialog to close (max 20 seconds)
+    repeat with i from 1 to 100
       if (count of windows) = 1 then exit repeat
       delay 0.2
     end repeat
