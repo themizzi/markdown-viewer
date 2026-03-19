@@ -15,9 +15,11 @@ When(/the user clicks File Open/, async () => {
     const openItem = ((fileMenu as { submenu: { items: unknown[] } }).submenu).items.find((item: unknown) => (item as { id?: string }).id === 'file-open');
     if (!openItem) throw new Error('File Open menu item not found');
     
-    if ((openItem as { click?: () => void }).click) {
-      (openItem as { click: () => void }).click();
+    const click = (openItem as { click?: unknown }).click;
+    if (typeof click !== 'function') {
+      throw new Error('File Open menu item has no valid click handler');
     }
+    (click as () => void)();
   });
   
   // Wait for dialog to appear
@@ -25,18 +27,18 @@ When(/the user clicks File Open/, async () => {
 });
 
 When(/the user clicks Cancel on the Open File dialog/, async () => {
-  const script = `-- Press Escape to close the Open File dialog
+  const script = `-- Click Cancel button on the Open File dialog
 tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for dialog to appear (max 10 seconds)
+    -- Wait for Open File dialog to appear (max 10 seconds)
     repeat with i from 1 to 50
-      set windowCount to (count of windows)
-      if windowCount > 1 then exit repeat
+      set dialogWindow to (first window whose name contains "Open")
+      if dialogWindow exists then exit repeat
       delay 0.2
     end repeat
     
-    -- Press Escape key to close the dialog
-    key code 53
+    -- Click the Cancel button
+    click button "Cancel" of (first window whose name contains "Open")
   end tell
 end tell`;
 
@@ -44,7 +46,7 @@ end tell`;
     execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const err = new Error(`Failed to press Escape: ${message}`);
+    const err = new Error(`Failed to click Cancel on Open File dialog: ${message}`);
     if (error instanceof Error) {
       err.stack = error.stack;
     }
@@ -56,17 +58,18 @@ end tell`;
 });
 
 Then(/the Open File dialog is not present/, async () => {
-  const script = `-- Verify dialog is closed by checking window count
+  const script = `-- Verify Open File dialog is closed by checking for its window
 tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for dialog to close (max 20 seconds)
+    -- Wait for Open File dialog window to close (max 20 seconds)
     repeat with i from 1 to 100
-      if (count of windows) = 1 then exit repeat
+      -- Exit once there are no windows whose name contains "Open"
+      if (count of windows whose name contains "Open") = 0 then exit repeat
       delay 0.2
     end repeat
     
-    -- Return true if only the main window remains
-    return ((count of windows) = 1)
+    -- Return true if no Open File dialog window remains
+    return ((count of windows whose name contains "Open") = 0)
   end tell
 end tell`;
 

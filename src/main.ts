@@ -45,8 +45,10 @@ function createWindow(): BrowserWindow {
 
   void window.loadFile(path.join(__dirname, "../src/index.html"));
 
-  const menu = createApplicationMenu(async () => {
-    await showOpenFileDialog();
+  const menu = createApplicationMenu(() => {
+    void showOpenFileDialog().catch((error) => {
+      console.error("Failed to open file dialog:", error);
+    });
   });
   Menu.setApplicationMenu(menu);
 

@@ -50,7 +50,8 @@ export const config = {
   cucumberOpts: {
     require: ["./e2e/steps/*.ts", "./e2e/support/hooks.ts"],
     timeout: 60000,
-    strict: true
+    strict: true,
+    tagExpression: process.platform === "darwin" ? "" : "not @macos"
   },
   tsConfigPath: path.join(dirname, "tsconfig.wdio.json"),
   onPrepare: async () => {
