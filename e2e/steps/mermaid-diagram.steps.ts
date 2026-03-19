@@ -1,4 +1,4 @@
-import { Given, When, Then } from '@wdio/cucumber-framework';
+import { When, Then } from '@wdio/cucumber-framework';
 import { $, browser, expect } from '@wdio/globals';
 import * as fs from 'fs';
 import * as path from 'path';

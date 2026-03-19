@@ -6,7 +6,7 @@ vi.mock("electron", () => ({
     name: "markdown-viewer"
   },
   Menu: {
-    buildFromTemplate: (template: any[]) => template
+    buildFromTemplate: (template: unknown[]) => template
   }
 }));
 
@@ -17,33 +17,43 @@ interface FakeMenuItem {
   click?: () => void;
 }
 
+interface TemplateItem {
+  label?: string;
+  submenu?: TemplateItem[];
+  id?: string;
+  click?: () => void;
+}
+
 interface FakeMenu {
   items: FakeMenuItem[];
 }
 
-function buildFakeMenu(template: any[]): FakeMenu {
+function buildFakeMenu(template: unknown[]): FakeMenu {
   return {
-    items: template.map((item) => ({
-      label: item.label,
-      submenu: item.submenu,
-      id: item.id,
-      click: item.click
-    }))
+    items: template.map((item) => {
+      const t = item as TemplateItem;
+      return {
+        label: t.label,
+        submenu: t.submenu,
+        id: t.id,
+        click: t.click
+      };
+    })
   };
 }
 
 describe("applicationMenu", () => {
   it("creates a File menu", () => {
-    const template = createApplicationMenu();
-    const menu = buildFakeMenu(template as unknown as any[]);
+    const template = createApplicationMenu() as unknown as unknown[];
+    const menu = buildFakeMenu(template);
 
     const fileMenu = menu.items.find((item) => item.label === "File");
     expect(fileMenu).toBeDefined();
   });
 
   it("includes an Open item under File", () => {
-    const template = createApplicationMenu();
-    const menu = buildFakeMenu(template as unknown as any[]);
+    const template = createApplicationMenu() as unknown as unknown[];
+    const menu = buildFakeMenu(template);
 
     const fileMenu = menu.items.find((item) => item.label === "File");
     expect(fileMenu).toBeDefined();
@@ -54,8 +64,8 @@ describe("applicationMenu", () => {
   });
 
   it("assigns a stable menu item id to the Open item", () => {
-    const template = createApplicationMenu();
-    const menu = buildFakeMenu(template as unknown as any[]);
+    const template = createApplicationMenu() as unknown as unknown[];
+    const menu = buildFakeMenu(template);
 
     const fileMenu = menu.items.find((item) => item.label === "File");
     const openItem = fileMenu?.submenu?.find((item) => item.label === "Open");

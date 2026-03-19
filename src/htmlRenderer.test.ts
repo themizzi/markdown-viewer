@@ -7,7 +7,7 @@ describe("HtmlRenderer", () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    const window = new Window();
+    new Window();
     document.body.innerHTML = "";
     container = document.createElement("div");
     container.id = "root";
