@@ -1,0 +1,30 @@
+2026-03-19T00:24:55.296Z DEBUG @wdio/utils:initializeServices: initialize service "electron" as NPM package
+2026-03-19T00:24:55.432Z INFO @wdio/cli:launcher: Run onPrepare hook
+2026-03-19T00:24:55.435Z DEBUG electron-service:service: Updating Electron - Chromium version map...
+2026-03-19T00:24:55.637Z INFO electron-service:launcher: Found Electron v36.0.0 with Chromedriver v136.0.7103.48
+2026-03-19T00:24:55.638Z DEBUG electron-service:launcher: Setting capability at onPrepare {
+  browserName: 'chrome',
+  'wdio:electronServiceOptions': {
+    appBinaryPath: '/Users/themizzi/GitHub/markdown-viewer/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron',
+    appArgs: [ './dist/main.js', './e2e/fixtures/test.md' ]
+  },
+  'goog:chromeOptions': {
+    binary: '/Users/themizzi/GitHub/markdown-viewer/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron',
+    windowTypes: [ 'app', 'webview' ],
+    args: [ './dist/main.js', './e2e/fixtures/test.md' ]
+  },
+  'wdio:enforceWebDriverClassic': true,
+  browserVersion: '136.0.7103.48'
+}
+2026-03-19T00:24:55.639Z DEBUG electron-service:launcher: === AppArmor Workaround Check Started ===
+2026-03-19T00:24:55.639Z DEBUG electron-service:launcher: Target Electron binaries: /Users/themizzi/GitHub/markdown-viewer/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron
+2026-03-19T00:24:55.639Z DEBUG electron-service:launcher: Platform: darwin
+2026-03-19T00:24:55.639Z DEBUG electron-service:launcher: Install mode: false
+2026-03-19T00:24:55.639Z DEBUG electron-service:launcher: Non-Linux platform detected, skipping AppArmor workaround
+2026-03-19T00:24:55.639Z DEBUG electron-service:launcher: === AppArmor Workaround Check Completed (Non-Linux) ===
+2026-03-19T00:24:55.639Z DEBUG @wdio/cli:utils: Finished to run "onPrepare" hook in 207ms
+2026-03-19T00:24:55.643Z INFO @wdio/utils: Setting up browser driver for: chrome@136.0.7103.48
+2026-03-19T00:24:55.643Z INFO @wdio/utils: Setting up browser binaries for: chrome@136.0.7103.48
+2026-03-19T00:24:55.645Z INFO webdriver: Using Chromedriver v136.0.7103.48 from cache directory /var/folders/cp/ht4l0dt14936qqhlr7gr20_w0000gn/T
+2026-03-19T00:25:09.891Z INFO @wdio/local-runner: Shutting down spawned worker
+2026-03-19T00:25:10.143Z INFO @wdio/local-runner: Waiting for 0 to shut down gracefully

@@ -14,6 +14,21 @@ const IPC_HTML_UPDATED = "viewer:html-updated";
 let mainWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
 
+function resolveMarkdownPath(argv: string[]): string {
+  const flaggedCandidate = argv
+    .find((value) => value.startsWith("--test-file="))
+    ?.slice("--test-file=".length);
+
+  if (flaggedCandidate) {
+    return path.resolve(process.cwd(), flaggedCandidate);
+  }
+
+  const candidates = argv.filter((value) => !value.startsWith("-"));
+  const preferredCandidate = [...candidates].reverse().find((value) => value.endsWith(".md"));
+  const candidate = preferredCandidate ?? candidates.at(-1);
+  return path.resolve(process.cwd(), candidate ?? "README.md");
+}
+
 function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1000,
@@ -32,7 +47,7 @@ function createWindow(): BrowserWindow {
 app.whenReady().then(async () => {
   mainWindow = createWindow();
 
-  const filePath = path.resolve(process.cwd(), process.argv[2] ?? "README.md");
+  const filePath = resolveMarkdownPath(process.argv.slice(2));
   const fileReader = new FileReaderService(fs);
   const fileWatcher = new FileWatcherService(chokidar);
 
