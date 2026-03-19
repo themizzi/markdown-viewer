@@ -27,18 +27,11 @@ When(/the user clicks File Open/, async () => {
 });
 
 When(/the user clicks Cancel on the Open File dialog/, async () => {
-  const script = `-- Click Cancel button on the Open File dialog
+  const script = `-- Press Escape to close the Open File dialog
 tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for Open File dialog to appear (max 10 seconds)
-    repeat with i from 1 to 50
-      set dialogWindow to (first window whose name contains "Open")
-      if dialogWindow exists then exit repeat
-      delay 0.2
-    end repeat
-    
-    -- Click the Cancel button
-    click button "Cancel" of (first window whose name contains "Open")
+    -- Press Escape key to close the dialog
+    key code 53
   end tell
 end tell`;
 
@@ -46,7 +39,7 @@ end tell`;
     execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const err = new Error(`Failed to click Cancel on Open File dialog: ${message}`);
+    const err = new Error(`Failed to close Open File dialog: ${message}`);
     if (error instanceof Error) {
       err.stack = error.stack;
     }
@@ -58,18 +51,17 @@ end tell`;
 });
 
 Then(/the Open File dialog is not present/, async () => {
-  const script = `-- Verify Open File dialog is closed by checking for its window
+  const script = `-- Verify dialog is closed by checking window count
 tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for Open File dialog window to close (max 20 seconds)
+    -- Wait for dialog to close (max 20 seconds)
     repeat with i from 1 to 100
-      -- Exit once there are no windows whose name contains "Open"
-      if (count of windows whose name contains "Open") = 0 then exit repeat
+      if (count of windows) = 1 then exit repeat
       delay 0.2
     end repeat
     
-    -- Return true if no Open File dialog window remains
-    return ((count of windows whose name contains "Open") = 0)
+    -- Return true if only the main window remains
+    return ((count of windows) = 1)
   end tell
 end tell`;
 
