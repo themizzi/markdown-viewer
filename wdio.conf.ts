@@ -1,8 +1,26 @@
 import path from "node:path";
+import { spawn } from "node:child_process";
 const dirname = path.dirname(new URL(import.meta.url).pathname);
+
+const appArgs = ["--test-file=./e2e/fixtures/test.md"];
+
+if (process.platform === "linux") {
+  appArgs.unshift("--no-sandbox");
+}
+
+function startXvfb() {
+  spawn("Xvfb", [":99", "-screen", "0", "1280x1024x24"], {
+    stdio: "ignore",
+    detached: true
+  }).unref();
+}
 
 export const config = {
   runner: "local",
+  autoXvfb: false,
+  xvfbAutoInstall: false,
+  xvfbMaxRetries: 5,
+  xvfbRetryDelay: 2000,
   specs: ["./e2e/features/*.feature"],
   exclude: [],
   maxInstances: 1,
@@ -11,12 +29,16 @@ export const config = {
       maxInstances: 1,
       browserName: "electron",
       "wdio:electronServiceOptions": {
-        appEntryPoint: "./dist/main.js",
-        appArgs: ["test-file=./e2e/fixtures/test.md"]
+        appBinaryPath: process.platform === 'darwin'
+          ? "./release/mac-arm64/markdown-viewer.app/Contents/MacOS/markdown-viewer"
+          : process.arch === 'arm64'
+            ? "./release/linux-arm64-unpacked/markdown-viewer"
+            : "./release/linux-unpacked/markdown-viewer",
+        appArgs
       }
     }
   ],
-  logLevel: "debug",
+  logLevel: "warn",
   bail: 0,
   baseUrl: "",
   waitforTimeout: 10000,
@@ -30,5 +52,25 @@ export const config = {
     timeout: 60000,
     strict: true
   },
-  tsConfigPath: path.join(dirname, "tsconfig.wdio.json")
+  tsConfigPath: path.join(dirname, "tsconfig.wdio.json"),
+  onPrepare: async () => {
+    const { exec } = await import("node:child_process");
+    return new Promise<void>((resolve, reject) => {
+      exec("npm run package", (error, stdout, stderr) => {
+        if (error) {
+          console.error("Build failed:", stderr);
+          reject(error);
+        } else {
+          console.log("Build complete:", stdout);
+          resolve();
+        }
+      });
+    });
+  },
+  beforeSession: function () {
+    if (process.platform === "linux") {
+      startXvfb();
+      process.env.DISPLAY = ":99";
+    }
+  }
 };

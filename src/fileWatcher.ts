@@ -21,6 +21,8 @@ export class FileWatcherService implements FileWatcher {
   async watch(filePath: string, onChange: () => void): Promise<WatchHandle> {
     const watcher = this.chokidar.watch(filePath, {
       ignoreInitial: true,
+      usePolling: process.platform === "linux",
+      interval: 100,
       awaitWriteFinish: {
         stabilityThreshold: 150,
         pollInterval: 50
