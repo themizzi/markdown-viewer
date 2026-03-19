@@ -17,6 +17,7 @@
   "build": {
     "appId": "com.markdownviewer.app",
     "productName": "markdown-viewer",
+    "icon": "build/icon.png",
     "asar": true,
     "asarUnpack": [
       "src/**/*.html",
@@ -28,13 +29,18 @@
     "files": [
       "dist/**/*",
       "src/**/*",
+      "build/**/*",
       "package.json"
     ],
     "mac": {
-      "target": ["dir"]
+      "target": [
+        "dir"
+      ]
     },
     "linux": {
-      "target": ["dir"]
+      "target": [
+        "dir"
+      ]
     }
   },
   "dependencies": {
@@ -52,6 +58,7 @@
     "@wdio/globals": "^9.26.1",
     "@wdio/local-runner": "^9.26.1",
     "@wdio/spec-reporter": "^9.26.1",
+    "canvas": "^3.2.1",
     "electron": "41.0.0",
     "electron-builder": "^26.8.1",
     "happy-dom": "^20.8.4",
