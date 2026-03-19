@@ -1,8 +1,8 @@
 declare global {
   interface Window {
     viewerApi: {
-      getHtml: () => Promise<string>;
-      onHtmlUpdated: (handler: (html: string) => void) => () => void;
+      getHtml: () => Promise<import("./contracts").RenderedDocument>;
+      onHtmlUpdated: (handler: (document: import("./contracts").RenderedDocument) => void) => () => void;
     };
     mermaid: {
       initialize: (config: Record<string, unknown>) => void;
@@ -25,11 +25,11 @@ class AppBootstrap {
   }
 
   async start(): Promise<void> {
-    const initialHtml = await this.viewerApi.getHtml();
-    await this.htmlRenderer.render(initialHtml);
+    const initialDocument = await this.viewerApi.getHtml();
+    await this.htmlRenderer.render(initialDocument.html);
 
-    this.viewerApi.onHtmlUpdated((nextHtml: string) => {
-      void this.htmlRenderer.render(nextHtml);
+    this.viewerApi.onHtmlUpdated((nextDocument) => {
+      void this.htmlRenderer.render(nextDocument.html);
     });
   }
 }

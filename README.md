@@ -1,3 +1,5 @@
+![Markdown Viewer icon](assets/icon-readme.png)
+
 # Markdown Viewer
 
 A minimal desktop markdown viewer built with Electron and TypeScript.

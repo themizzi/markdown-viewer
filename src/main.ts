@@ -1,5 +1,6 @@
 import path from "node:path";
 import { promises as fs } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { app, BrowserWindow, ipcMain } from "electron";
 import chokidar from "chokidar";
 import { marked } from "marked";
@@ -58,22 +59,28 @@ app.whenReady().then(async () => {
     fileReader,
     fileWatcher,
     markdownService,
-    (html) => {
+    (document) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send(IPC_HTML_UPDATED, html);
+        mainWindow.webContents.send(IPC_HTML_UPDATED, document);
       }
     }
   );
 
-  ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? "<p>Loading...</p>");
+  ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
+    html: "<p>Loading...</p>",
+    baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  });
 
   await controller.start(filePath);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       mainWindow = createWindow();
-      const html = controller?.getHtml() ?? "<p>Loading...</p>";
-      mainWindow.webContents.send(IPC_HTML_UPDATED, html);
+      const document = controller?.getHtml() ?? {
+        html: "<p>Loading...</p>",
+        baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+      };
+      mainWindow.webContents.send(IPC_HTML_UPDATED, document);
     }
   });
 });

@@ -5,6 +5,11 @@ import * as path from 'path';
 
 const fixturesDir = path.resolve(process.cwd(), 'e2e/fixtures');
 const testFile = path.join(fixturesDir, 'test.md');
+const sampleImage = path.join(fixturesDir, 'sample.png');
+const sampleImageBuffer = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9pF8nKQAAAAASUVORK5CYII=',
+  'base64'
+);
 
 async function closeElectronApp(): Promise<void> {
   if (!browser.sessionId) {
@@ -50,8 +55,9 @@ This is a **test** document.
 - Item 1
 - Item 2
   `;
-  
+
   fs.writeFileSync(testFile, defaultContent);
+  fs.writeFileSync(sampleImage, sampleImageBuffer);
 });
 
 After(async () => {

@@ -2,11 +2,17 @@ import type {
   FileReader,
   FileWatcher,
   MarkdownRenderer,
+  RenderedDocument,
   WatchHandle
 } from "./contracts";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 export class ViewerController {
-  private latestHtml = "<p>Loading...</p>";
+  private latestDocument: RenderedDocument = {
+    html: "<p>Loading...</p>",
+    baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  };
   private watchHandle: WatchHandle | null = null;
   private filePath = "";
 
@@ -14,11 +20,11 @@ export class ViewerController {
     private readonly fileReader: FileReader,
     private readonly fileWatcher: FileWatcher,
     private readonly markdownRenderer: MarkdownRenderer,
-    private readonly publishHtml: (html: string) => void
+    private readonly publishDocument: (document: RenderedDocument) => void
   ) {}
 
-  getHtml(): string {
-    return this.latestHtml;
+  getHtml(): RenderedDocument {
+    return this.latestDocument;
   }
 
   async start(filePath: string): Promise<void> {
@@ -38,7 +44,10 @@ export class ViewerController {
 
   private async refresh(): Promise<void> {
     const markdown = await this.fileReader.read(this.filePath);
-    this.latestHtml = this.markdownRenderer.render(markdown);
-    this.publishHtml(this.latestHtml);
+    this.latestDocument = {
+      html: this.markdownRenderer.render(markdown),
+      baseHref: pathToFileURL(`${path.dirname(this.filePath)}${path.sep}`).href,
+    };
+    this.publishDocument(this.latestDocument);
   }
 }

@@ -26,4 +26,12 @@ describe("MarkedMarkdownService", () => {
 
     expect(result).toBe("<p>Run <code>npm install</code></p>\n");
   });
+
+  it("preserves relative image paths in rendered HTML", () => {
+    const service = new MarkedMarkdownService(marked);
+
+    const result = service.render("![icon](assets/icon.png)");
+
+    expect(result).toBe('<p><img src="assets/icon.png" alt="icon"></p>\n');
+  });
 });
