@@ -72,4 +72,18 @@ describe("applicationMenu", () => {
 
     expect(openItem?.id).toBe("file-open");
   });
+
+  it("File -> Open callback invokes the provided callback", () => {
+    const onOpenCallback = vi.fn();
+    const template = createApplicationMenu(onOpenCallback) as unknown as unknown[];
+    const menu = buildFakeMenu(template);
+
+    const fileMenu = menu.items.find((item) => item.label === "File");
+    const openItem = fileMenu?.submenu?.find((item) => item.label === "Open");
+
+    expect(openItem?.click).toBeDefined();
+    openItem?.click?.();
+
+    expect(onOpenCallback).toHaveBeenCalledTimes(1);
+  });
 });

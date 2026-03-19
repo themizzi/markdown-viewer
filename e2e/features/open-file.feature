@@ -1,7 +1,8 @@
-Feature: Open file menu
+@macos
+Feature: Open file dialog
 
-  Scenario: The File menu includes Open
-    Given the markdown viewer application is running
-    When the user opens the File menu
-    Then the File menu should include Open
+  Scenario: File Open shows the native open dialog
+    When the user clicks File Open
+    And the user clicks Cancel on the Open File dialog
+    Then the Open File dialog is not present
 

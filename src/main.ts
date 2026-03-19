@@ -9,6 +9,7 @@ import { FileWatcherService } from "./fileWatcher";
 import { MarkedMarkdownService } from "./markdownService";
 import { ViewerController } from "./viewerController";
 import { createApplicationMenu } from "./applicationMenu";
+import { showOpenFileDialog } from "./openFileDialog";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
@@ -44,8 +45,8 @@ function createWindow(): BrowserWindow {
 
   void window.loadFile(path.join(__dirname, "../src/index.html"));
 
-  const menu = createApplicationMenu(() => {
-    // Open file dialog would go here
+  const menu = createApplicationMenu(async () => {
+    await showOpenFileDialog();
   });
   Menu.setApplicationMenu(menu);
 
