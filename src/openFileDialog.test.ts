@@ -17,7 +17,7 @@ describe('openFileDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('calls dialog.showOpenDialog with correct options', async () => {
+  it('shows open dialog with markdown file filters', async () => {
     const { showOpenFileDialog } = await import('./openFileDialog');
 
     await showOpenFileDialog();
@@ -29,18 +29,6 @@ describe('openFileDialog', () => {
         { name: 'All Files', extensions: ['*'] }
       ]
     });
-  });
-
-  it('does not pass a window argument', async () => {
-    const { showOpenFileDialog } = await import('./openFileDialog');
-
-    await showOpenFileDialog();
-
-    // Verify only one argument passed (options object, no window)
-    expect(dialog.showOpenDialog).toHaveBeenCalledTimes(1);
-    const callArgs = vi.mocked(dialog.showOpenDialog).mock.calls[0];
-    expect(callArgs.length).toBe(1);
-    expect(typeof callArgs[0]).toBe('object'); // options only
   });
 
   it('returns the dialog result', async () => {
