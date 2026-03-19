@@ -40,7 +40,9 @@ export async function waitForLinuxOpenDialog(maxWaitMs = 10000): Promise<void> {
 
 /**
  * Check if the native open dialog is currently present on Linux.
- * @returns true if dialog is present, false otherwise
+ * Distinguishes between "dialog not present" and "unable to check" (missing xdotool, display issues).
+ * @returns true if dialog is present, false if not present or unable to check
+ * @throws if unable to check due to missing dependencies or display server issues
  */
 export function isLinuxOpenDialogPresent(): boolean {
   try {
@@ -50,18 +52,47 @@ export function isLinuxOpenDialogPresent(): boolean {
     ).trim();
     
     return result.length > 0;
-  } catch {
+  } catch (error) {
+    const err = error as { stderr?: string | Buffer; message?: string; code?: string };
+    const stderr = typeof err?.stderr === 'string' || Buffer.isBuffer(err?.stderr)
+      ? String(err.stderr)
+      : '';
+    const message = typeof err?.message === 'string' ? err.message : '';
+    const combinedOutput = `${message}\n${stderr}`.trim();
+
+    const isDependencyOrDisplayError =
+      err?.code === 'ENOENT' ||
+      /can't open display/i.test(combinedOutput) ||
+      /no display name and no \$DISPLAY environment variable/i.test(combinedOutput);
+
+    if (isDependencyOrDisplayError) {
+      const diagnostic = new Error(
+        `${LINUX_OPEN_DIALOG} Unable to check for open dialog. ` +
+        `Ensure xdotool is installed and a valid X display is available. ` +
+        (combinedOutput ? `Details: ${combinedOutput}` : '')
+      );
+      (diagnostic as { cause?: unknown }).cause = error;
+      throw diagnostic;
+    }
+
+    // For other errors, assume dialog is not present
     return false;
   }
 }
 
 /**
  * Dismiss the native open dialog on Linux by sending Escape key.
+ * Waits for the dialog to appear before attempting dismissal to reduce flakiness.
  * Uses xdotool to send key input to the focused window.
  * @param maxWaitMs Maximum time to wait for dialog dismissal (default 5000)
  */
 export async function dismissLinuxOpenDialog(maxWaitMs = 5000): Promise<void> {
   try {
+    // Wait for dialog to appear before attempting dismissal
+    // This prevents flakiness due to slow dialog creation under Xvfb
+    console.log(`${LINUX_OPEN_DIALOG} Waiting for dialog to appear before dismissal...`);
+    await waitForLinuxOpenDialog(Math.min(maxWaitMs, 10000));
+    
     // Find the open dialog window
     const windowId = execSync(
       `xdotool search --name '(Open File|Choose File|Select a File)' 2>/dev/null | head -1`,
