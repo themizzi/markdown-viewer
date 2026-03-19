@@ -20,14 +20,14 @@ async function closeElectronApp(): Promise<void> {
     await browser.electron.execute((electron) => {
       electron.app.quit();
     });
-  } catch {}
+  } catch { /* empty */ }
 
   await browser.pause(100);
 
   try {
     await browser.electron.execute((electron) => {
       const windows = electron.BrowserWindow.getAllWindows();
-      windows.forEach((win: any) => {
+      windows.forEach((win: Record<string, unknown>) => {
         if (!win.isDestroyed()) {
           win.destroy();
         }
@@ -36,7 +36,7 @@ async function closeElectronApp(): Promise<void> {
         electron.app.exit(0);
       }
     });
-  } catch {}
+  } catch { /* empty */ }
 
   await browser.pause(100);
 }
