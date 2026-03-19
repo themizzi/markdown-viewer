@@ -1,13 +1,14 @@
 import path from "node:path";
 import { promises as fs } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import chokidar from "chokidar";
 import { marked } from "marked";
 import { FileReaderService } from "./fileReader";
 import { FileWatcherService } from "./fileWatcher";
 import { MarkedMarkdownService } from "./markdownService";
 import { ViewerController } from "./viewerController";
+import { createApplicationMenu } from "./applicationMenu";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
@@ -42,6 +43,12 @@ function createWindow(): BrowserWindow {
   });
 
   void window.loadFile(path.join(__dirname, "../src/index.html"));
+
+  const menu = createApplicationMenu(() => {
+    // Open file dialog would go here
+  });
+  Menu.setApplicationMenu(menu);
+
   return window;
 }
 
