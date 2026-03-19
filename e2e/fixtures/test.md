@@ -1,3 +1,7 @@
-# Relative Image
+# Test Markdown
 
-![Fixture image](./sample.png)
+This is a **test** document.
+
+- Item 1
+- Item 2
+  
