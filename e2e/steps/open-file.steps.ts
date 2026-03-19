@@ -50,7 +50,7 @@ end tell`;
   await browser.pause(1000);
 });
 
-Then(/the Open File dialog is not present/, async () => {
+Then(/^the Open File dialog is not present$/, async () => {
   const script = `-- Verify dialog is closed by checking window count
 tell application "System Events"
   tell process "markdown-viewer"

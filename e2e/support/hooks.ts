@@ -2,6 +2,7 @@ import { Before, After, BeforeAll, AfterAll } from '@wdio/cucumber-framework';
 import { browser } from '@wdio/globals';
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'node:child_process';
 
 const fixturesDir = path.resolve(process.cwd(), 'e2e/fixtures');
 const testFile = path.join(fixturesDir, 'test.md');
@@ -41,6 +42,21 @@ async function closeElectronApp(): Promise<void> {
   await browser.pause(100);
 }
 
+/**
+ * Clean up any lingering Linux file dialog processes.
+ * Canonical cleanup for Linux tests.
+ */
+function cleanupLinuxDialogs(): void {
+  try {
+    // Kill any remaining file chooser or dialog processes
+    execSync(`pkill -f 'zenity|kdialog' 2>/dev/null || true`, {
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+  } catch {
+    // Cleanup is best-effort
+  }
+}
+
 BeforeAll(async () => {
   if (!fs.existsSync(fixturesDir)) {
     fs.mkdirSync(fixturesDir, { recursive: true });
@@ -61,6 +77,8 @@ This is a **test** document.
 });
 
 After(async () => {
+  // Canonical cleanup: handle Linux dialog processes first, then close Electron
+  cleanupLinuxDialogs();
   await closeElectronApp();
 });
 

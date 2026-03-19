@@ -51,7 +51,16 @@ export const config = {
     require: ["./e2e/steps/*.ts", "./e2e/support/hooks.ts"],
     timeout: 60000,
     strict: true,
-    tagExpression: process.platform === "darwin" ? "" : "not @macos"
+    // Platform-specific tag expression to prevent cross-platform tag leakage:
+    // - macOS: no tag filter (runs all non-explicitly-excluded scenarios)
+    // - Linux: require @linux AND exclude @macos (only Linux-specific scenarios)
+    // - Other: exclude @linux and @macos (only platform-agnostic scenarios)
+    tagExpression: 
+      process.platform === "darwin"
+        ? ""
+        : process.platform === "linux"
+          ? "@linux and not @macos"
+          : "not @linux and not @macos"
   },
   tsConfigPath: path.join(dirname, "tsconfig.wdio.json"),
   onPrepare: async () => {
