@@ -6,7 +6,8 @@ When(/the user opens the File menu/, async () => {
     const menu = electron.Menu.getApplicationMenu();
     const fileMenu = menu?.items?.find((item: any) => item.label === 'File');
     if (fileMenu && fileMenu.submenu) {
-      fileMenu.submenu.forEach((menuItem: any) => {
+      const submenuItems = (fileMenu.submenu as any).items || [];
+      submenuItems.forEach((menuItem: any) => {
         if (menuItem.label && menuItem.click) {
           menuItem.click();
         }
@@ -29,12 +30,17 @@ Then(/the File menu should include Open/, async () => {
       const submenu = fileMenu.submenu;
       if (!submenu) return 'no submenu';
       const submenuItems = submenu.items || submenu;
-      const hasOpen = submenuItems.some((item: any) => item.label === 'Open');
+      const hasOpen = submenuItems.some(
+        (item: any) => item.id === 'file-open' || item.label === 'Open'
+      );
       return hasOpen ? true : 'no open item';
     } catch (e: any) {
       return 'error: ' + e.message;
     }
   });
-  console.log('Result:', result);
-  expect(result).toBe(true);
+  if (result !== true) {
+    throw new Error(
+      `Expected the File menu to include "Open", but the menu inspection returned: ${String(result)}`
+    );
+  }
 });

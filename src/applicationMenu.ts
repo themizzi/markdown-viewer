@@ -1,4 +1,4 @@
-import { Menu, MenuItemConstructorOptions, app } from "electron";
+import { Menu, MenuItemConstructorOptions, app, shell } from "electron";
 
 export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
   const isMac = process.platform === "darwin";
@@ -71,7 +71,6 @@ export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
             {
               label: "Learn More",
               click: async () => {
-                const { shell } = require("electron");
                 await shell.openExternal("https://github.com");
               }
             }
