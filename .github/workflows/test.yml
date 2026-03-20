@@ -21,5 +21,5 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run package
-      - run: npm run test:e2e:headless
-      - run: WDIO_APP_ARGS_JSON='[]' npm run test:e2e:headless -- --spec ./e2e/features/startup-open-dialog.feature
+      - run: WDIO_LOG_LEVEL=warn npm run test:e2e:headless
+      - run: WDIO_LOG_LEVEL=warn WDIO_APP_ARGS_JSON='[]' npm run test:e2e:headless -- --tags @startup-no-args
