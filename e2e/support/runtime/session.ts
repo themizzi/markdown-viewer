@@ -26,5 +26,10 @@ export function buildRuntimeSessionConfig(): RuntimeSessionConfig {
 }
 
 export async function createElectronSession(capabilities: WebdriverIO.Capabilities): Promise<WebdriverIO.Browser> {
-  return startWdioSession([capabilities], { rootDir: process.cwd() });
+  return startWdioSession([capabilities], {
+    rootDir: process.cwd(),
+    cdpBridgeTimeout: 15_000,
+    cdpBridgeRetryCount: 15,
+    cdpBridgeWaitInterval: 200,
+  });
 }
