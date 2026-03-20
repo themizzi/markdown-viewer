@@ -57,7 +57,6 @@ export async function waitForLinuxOpenDialog(maxWaitMs = 10000): Promise<void> {
       ).trim();
       
       if (result) {
-        console.log(`${LINUX_OPEN_DIALOG} Found open dialog window ID: ${result}`);
         return;
       }
     } catch {
@@ -129,7 +128,6 @@ export async function selectFileInLinuxOpenDialog(
   maxWaitMs = 10000
 ): Promise<void> {
   try {
-    console.log(`${LINUX_OPEN_DIALOG} Waiting for dialog to appear...`);
     await waitForLinuxOpenDialog(Math.min(maxWaitMs, 10000));
     
     // Find the open dialog window
@@ -139,14 +137,12 @@ export async function selectFileInLinuxOpenDialog(
     ).trim();
     
     if (!windowId) {
-      console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
       throw new Error(
         `${LINUX_OPEN_DIALOG} Open dialog window not found. ` +
         `Make sure xdotool is installed: apt-get install xdotool`
       );
     }
     
-    console.log(`${LINUX_OPEN_DIALOG} Found dialog window: ${windowId}`);
     
     // Focus the dialog window
     execSync(`xdotool windowfocus ${windowId}`, {
@@ -158,7 +154,6 @@ export async function selectFileInLinuxOpenDialog(
     await new Promise(resolve => setTimeout(resolve, 300));
     
     // Try Ctrl+L to access location bar (GTK file chooser)
-    console.log(`${LINUX_OPEN_DIALOG} Attempting to access location bar with Ctrl+L...`);
     execSync(`xdotool key ctrl+l`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore']
@@ -167,7 +162,6 @@ export async function selectFileInLinuxOpenDialog(
     await new Promise(resolve => setTimeout(resolve, 200));
     
     // Clear any existing text and type the folder path
-    console.log(`${LINUX_OPEN_DIALOG} Typing folder path: ${folderPath}`);
     execSync(`xdotool key ctrl+a`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore']
@@ -183,7 +177,6 @@ export async function selectFileInLinuxOpenDialog(
     await new Promise(resolve => setTimeout(resolve, 200));
     
     // Press Return to navigate to the folder
-    console.log(`${LINUX_OPEN_DIALOG} Pressing Return to navigate to folder...`);
     execSync(`xdotool key Return`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore']
@@ -193,7 +186,6 @@ export async function selectFileInLinuxOpenDialog(
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Type the filename
-    console.log(`${LINUX_OPEN_DIALOG} Typing filename: ${fileName}`);
     execSync(`xdotool type '${fileName.replace(/'/g, "'\\''")}'`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore']
@@ -202,7 +194,6 @@ export async function selectFileInLinuxOpenDialog(
     await new Promise(resolve => setTimeout(resolve, 200));
     
     // Press Return to select and open the file
-    console.log(`${LINUX_OPEN_DIALOG} Pressing Return to open file...`);
     execSync(`xdotool key Return`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore']
@@ -211,10 +202,8 @@ export async function selectFileInLinuxOpenDialog(
     // Wait for file to be loaded and dialog to close
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    console.log(`${LINUX_OPEN_DIALOG} File selection completed`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
     const err = new Error(
       `${LINUX_OPEN_DIALOG} Failed to select file in dialog: ${message}`
     );
@@ -233,7 +222,6 @@ export async function dismissLinuxOpenDialog(maxWaitMs = 5000): Promise<void> {
   try {
     // Wait for dialog to appear before attempting dismissal
     // This prevents flakiness due to slow dialog creation under Xvfb
-    console.log(`${LINUX_OPEN_DIALOG} Waiting for dialog to appear before dismissal...`);
     await waitForLinuxOpenDialog(Math.min(maxWaitMs, 10000));
     
     // Find the open dialog window
@@ -243,14 +231,12 @@ export async function dismissLinuxOpenDialog(maxWaitMs = 5000): Promise<void> {
     ).trim();
     
     if (!windowId) {
-      console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
       throw new Error(
         `${LINUX_OPEN_DIALOG} Open dialog window not found. ` +
         `Make sure xdotool is installed: apt-get install xdotool`
       );
     }
     
-    console.log(`${LINUX_OPEN_DIALOG} Focusing window ${windowId} and sending Escape key`);
     
     // Focus the window and send Escape key
     execSync(`xdotool windowfocus ${windowId} key Escape 2>/dev/null`, {
@@ -262,7 +248,6 @@ export async function dismissLinuxOpenDialog(maxWaitMs = 5000): Promise<void> {
     const startTime = Date.now();
     while (Date.now() - startTime < maxWaitMs) {
       if (!isLinuxOpenDialogPresent()) {
-        console.log(`${LINUX_OPEN_DIALOG} Dialog dismissed successfully`);
         return;
       }
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -274,7 +259,6 @@ export async function dismissLinuxOpenDialog(maxWaitMs = 5000): Promise<void> {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
     const err = new Error(
       `${LINUX_OPEN_DIALOG} Failed to dismiss dialog: ${message}`
     );

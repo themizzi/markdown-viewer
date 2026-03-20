@@ -75,7 +75,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     
     # Use tccutil to grant permissions
     if command -v tccutil &> /dev/null; then
-        sudo tccutil grant Accessibility "$TARGET_APP" 2>/dev/null
+        sudo tccutil grant Accessibility "$TARGET_APP" 2>/dev/null || true
         if [ $? -eq 0 ]; then
             echo "✓ Successfully granted accessibility to $APP_NAME"
         else

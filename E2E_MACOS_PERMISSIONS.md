@@ -23,26 +23,7 @@ This is enforced through the **Transparency, Consent, and Control (TCC)** framew
 
 The e2e test requires accessibility permissions for the process running `osascript`. Follow the appropriate solution for your environment:
 
-### Option 1: Grant Full Disk Access (Easiest for Development)
-
-1. **Open System Settings**
-   - Go to: System Settings → Privacy & Security → Full Disk Access
-
-2. **Add your Terminal/IDE**
-   - Click the `+` button
-   - Navigate to `/Applications/Utilities/Terminal.app` (or your IDE)
-   - Click "Open"
-
-3. **Verify permission is granted**
-   - The app should now appear in the Full Disk Access list
-
-4. **Restart your Terminal/IDE session**
-   - Close and reopen Terminal or your IDE
-   - Run the e2e tests again
-
-**Why this works:** Full Disk Access includes accessibility permissions as a superset.
-
-### Option 2: Grant Accessibility Permissions Only (Most Restrictive)
+### Option 1: Grant Accessibility Permissions (Recommended)
 
 1. **Open System Settings**
    - Go to: System Settings → Privacy & Security → Accessibility
@@ -52,9 +33,14 @@ The e2e test requires accessibility permissions for the process running `osascri
    - Navigate to `/Applications/Utilities/Terminal.app` (or your IDE)
    - Click "Open"
 
-3. **Restart your Terminal/IDE session**
+3. **Verify permission is granted**
+   - The app should now appear in the Accessibility list
 
-### Option 3: Using `tccutil` (For Automation/CI)
+4. **Restart your Terminal/IDE session**
+   - Close and reopen Terminal or your IDE
+   - Run the e2e tests again
+
+### Option 2: Using `tccutil` (For Automation/CI)
 
 If you're setting up a CI environment or want to automate this:
 
@@ -71,12 +57,12 @@ tccutil dump Accessibility
 
 Note: This requires `sudo` and may prompt for your password.
 
-### Option 4: Disable System Integrity Protection (Not Recommended)
+### Option 3: Disable System Integrity Protection (Not Recommended)
 
 This is mentioned for completeness but **should not be used** in normal development:
 - Disabling SIP weakens system security
 - It's intended only for kernel development, not application testing
-- Granting specific permissions (Options 1-3) is always preferable
+- Granting accessibility permissions (Options 1-2) is always preferable
 
 ## Verification
 

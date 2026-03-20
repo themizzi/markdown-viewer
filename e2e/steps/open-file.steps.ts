@@ -1,6 +1,11 @@
 import { When, Then, Given } from '@wdio/cucumber-framework';
 import { browser, expect } from '@wdio/globals';
 import { execSync } from 'node:child_process';
+import * as path from 'node:path';
+import {
+  dismissLinuxOpenDialog,
+  selectFileInLinuxOpenDialog,
+} from '../support/linuxOpenFileDialog';
 
 Given(/the app is showing the initial test markdown document/, async () => {
   const appElement = await browser.$('#app');
@@ -10,7 +15,7 @@ Given(/the app is showing the initial test markdown document/, async () => {
 
 When(/the user clicks File Open/, async () => {
   // Trigger the file-open menu item from Electron app menu
-  const result = await browser.electron.execute((electron: unknown) => {
+  await browser.electron.execute((electron: unknown) => {
     const { Menu } = electron as { Menu: { getApplicationMenu: () => unknown } };
     const menu = Menu.getApplicationMenu();
     if (!menu) throw new Error('No application menu found');
@@ -26,29 +31,49 @@ When(/the user clicks File Open/, async () => {
       throw new Error('File Open menu item has no valid click handler');
     }
     (click as () => void)();
-    return 'Menu click executed';
   });
-  
-  console.log('Menu click result:', result);
   
   // Wait for dialog to appear
   await new Promise(resolve => setTimeout(resolve, 1000));
 });
 
 When(/the user selects the deterministic target file in the Open File dialog/, async () => {
-  const fixturePath = '/Users/themizzi/GitHub/markdown-viewer/e2e/fixtures';
+  const fixturePath = path.resolve(process.cwd(), 'e2e/fixtures');
   const fileName = 'open-dialog-target.md';
   
+  // Check if running on macOS or Linux and use appropriate automation
+  if (process.platform === 'darwin') {
+    // macOS: Use AppleScript
+    await selectFileInMacOSOpenDialog(fixturePath, fileName);
+  } else if (process.platform === 'linux') {
+    // Linux: Use xdotool
+    await selectFileInLinuxOpenDialog(fixturePath, fileName, 10000);
+  } else {
+    throw new Error(`Unsupported platform for e2e testing: ${process.platform}`);
+  }
+  
+  // Wait for file to be loaded
+  await new Promise(resolve => setTimeout(resolve, 1000));
+});
+
+async function selectFileInMacOSOpenDialog(fixturePath: string, fileName: string): Promise<void> {
   // AppleScript to navigate to the fixtures directory and select the target file
   // The dialog opens as a standalone modal window (not a sheet)
   const script = `
 tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for the Open dialog window to appear
+    -- Wait for the Open dialog window to appear with timeout
     set dialogWindowName to "Open"
-    repeat until exists window dialogWindowName
+    set maxWaitTime to 10
+    set elapsedTime to 0
+    repeat until exists window dialogWindowName or elapsedTime > maxWaitTime
       delay 0.2
+      set elapsedTime to elapsedTime + 0.2
     end repeat
+    
+    if not (exists window dialogWindowName) then
+      error "Open dialog did not appear after " & maxWaitTime & " seconds"
+    end if
     
     -- Interact with the Open dialog window
     tell window dialogWindowName
@@ -112,39 +137,44 @@ end tell`;
       errorMessage = `AppleScript permissions blocked automation. Please enable System Events in Security & Privacy settings.`;
     }
     
+    // Check for timeout error
+    if (message.includes('did not appear after')) {
+      errorMessage = `${message}`;
+    }
+    
     const err = new Error(errorMessage);
     if (error instanceof Error) {
       err.stack = error.stack;
     }
     throw err;
   }
-  
-  // Wait for file to be loaded
-  await new Promise(resolve => setTimeout(resolve, 1000));
-});
+}
 
 
 When(/the user clicks Cancel on the Open File dialog/, async () => {
-  const script = `-- Press Escape to close the Open File dialog
-tell application "System Events"
+  if (process.platform === 'darwin') {
+    // macOS: Use AppleScript to press Escape
+    const script = `tell application "System Events"
   tell process "markdown-viewer"
-    -- Focus on the Open dialog window
     tell window "Open"
-      -- Press Escape key to close the dialog
       key code 53
     end tell
   end tell
 end tell`;
 
-  try {
-    execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const err = new Error(`Failed to close Open File dialog: ${message}`);
-    if (error instanceof Error) {
-      err.stack = error.stack;
+    try {
+      execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const err = new Error(`Failed to close Open File dialog: ${message}`);
+      if (error instanceof Error) {
+        err.stack = error.stack;
+      }
+      throw err;
     }
-    throw err;
+  } else if (process.platform === 'linux') {
+    // Linux: Use xdotool to dismiss dialog
+    await dismissLinuxOpenDialog(5000);
   }
   
   // Wait for dialog to close
@@ -152,32 +182,37 @@ end tell`;
 });
 
 Then(/^the Open File dialog is not present$/, async () => {
-  const script = `-- Verify dialog is closed by checking for "Open" window
-tell application "System Events"
+  if (process.platform === 'darwin') {
+    // macOS: Use AppleScript to verify dialog is closed
+    const script = `tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for dialog to close (max 20 seconds)
     repeat with i from 1 to 100
       if not (exists window "Open") then exit repeat
       delay 0.2
     end repeat
-    
-    -- Return true if the "Open" window no longer exists
     return not (exists window "Open")
   end tell
 end tell`;
 
-  try {
-    const result = execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
-    const dialogNotPresent = result.trim() === 'true';
-    expect(dialogNotPresent).toBe(true);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const err = new Error(`Failed to verify dialog is not present: ${message}`);
-     if (error instanceof Error) {
-       err.stack = error.stack;
+    try {
+      const result = execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
+      const dialogNotPresent = result.trim() === 'true';
+      expect(dialogNotPresent).toBe(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const err = new Error(`Failed to verify dialog is not present: ${message}`);
+       if (error instanceof Error) {
+         err.stack = error.stack;
+       }
+       throw err;
      }
-     throw err;
-   }
+  } else if (process.platform === 'linux') {
+    // Linux: Already verified in dismissLinuxOpenDialog or other Linux-specific steps
+    // Just check if dialog is not present
+    const { isLinuxOpenDialogPresent } = await import('../support/linuxOpenFileDialog');
+    const dialogPresent = isLinuxOpenDialogPresent();
+    expect(dialogPresent).toBe(false);
+  }
 });
 
 Then(/the app shows the selected markdown document/, async () => {
@@ -185,3 +220,4 @@ Then(/the app shows the selected markdown document/, async () => {
   const text = await appElement.getText();
   expect(text).toContain('OPEN_FILE_TARGET_FIXTURE');
 });
+

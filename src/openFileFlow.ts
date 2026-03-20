@@ -12,19 +12,14 @@ export async function openFileFlow(
   switchFile: (filePath: string) => Promise<void>
 ): Promise<void> {
   const currentPath = getCurrentFilePath();
-  console.log("openFileFlow: current path =", currentPath);
   
   const result = await showOpenFileDialog(currentPath);
-  console.log("openFileFlow: dialog result =", result);
 
   if (result.canceled || result.filePaths.length === 0) {
     // No-op: user cancelled the dialog
-    console.log("openFileFlow: dialog was cancelled or no file selected");
     return;
   }
 
   const selectedPath = result.filePaths[0];
-  console.log("openFileFlow: switching to file =", selectedPath);
   await switchFile(selectedPath);
-  console.log("openFileFlow: file switch complete");
 }

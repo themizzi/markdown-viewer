@@ -48,15 +48,12 @@ function createWindow(): BrowserWindow {
   void window.loadFile(path.join(__dirname, "../src/index.html"));
 
   const menu = createApplicationMenu(() => {
-    console.log("File Open clicked - starting openFileFlow");
     void openFileFlow(
       () => controller?.getFocusedFilePath() ?? "",
       showOpenFileDialog,
       async (filePath) => {
-        console.log("openFileFlow callback - switching to file:", filePath);
         if (controller) {
           await controller.openFile(filePath);
-          console.log("File switched successfully");
         }
       }
     ).catch((error) => {
@@ -94,14 +91,16 @@ app.whenReady().then(async () => {
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
   });
 
-  // IPC handler for e2e testing - directly open a specific file
-  ipcMain.handle(IPC_OPEN_FILE, async (_event, filePath: string) => {
-    if (controller) {
-      await controller.openFile(filePath);
-      return { success: true };
-    }
-    return { success: false, error: 'Controller not initialized' };
-  });
+  // IPC handler for e2e testing - only register in dev/test builds
+  if (!app.isPackaged) {
+    ipcMain.handle(IPC_OPEN_FILE, async (_event, filePath: string) => {
+      if (controller) {
+        await controller.openFile(filePath);
+        return { success: true };
+      }
+      return { success: false, error: 'Controller not initialized' };
+    });
+  }
 
   await controller.start(filePath);
 
