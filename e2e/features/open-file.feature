@@ -1,8 +1,8 @@
-@macos
 Feature: Open file dialog
 
-  Scenario: File Open shows the native open dialog
+  @macos @linux
+  Scenario: File Open loads the selected markdown file into the current window
+    Given the app is showing the initial test markdown document
     When the user clicks File Open
-    And the user clicks Cancel on the Open File dialog
-    Then the Open File dialog is not present
-
+    And the user selects the deterministic target file in the Open File dialog
+    Then the app shows the selected markdown document

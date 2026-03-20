@@ -27,12 +27,21 @@ export class ViewerController {
     return this.latestDocument;
   }
 
+  getFocusedFilePath(): string {
+    return this.filePath;
+  }
+
   async start(filePath: string): Promise<void> {
     this.filePath = filePath;
     await this.refresh();
     this.watchHandle = await this.fileWatcher.watch(this.filePath, () => {
       void this.refresh();
     });
+  }
+
+  async openFile(filePath: string): Promise<void> {
+    await this.stop();
+    await this.start(filePath);
   }
 
   async stop(): Promise<void> {

@@ -10,9 +10,11 @@ import { MarkedMarkdownService } from "./markdownService";
 import { ViewerController } from "./viewerController";
 import { createApplicationMenu } from "./applicationMenu";
 import { showOpenFileDialog } from "./openFileDialog";
+import { openFileFlow } from "./openFileFlow";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
+const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
 
 let mainWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
@@ -46,8 +48,16 @@ function createWindow(): BrowserWindow {
   void window.loadFile(path.join(__dirname, "../src/index.html"));
 
   const menu = createApplicationMenu(() => {
-    void showOpenFileDialog().catch((error) => {
-      console.error("Failed to open file dialog:", error);
+    void openFileFlow(
+      () => controller?.getFocusedFilePath() ?? "",
+      showOpenFileDialog,
+      async (filePath) => {
+        if (controller) {
+          await controller.openFile(filePath);
+        }
+      }
+    ).catch((error) => {
+      console.error("Failed to open file:", error);
     });
   });
   Menu.setApplicationMenu(menu);
@@ -80,6 +90,17 @@ app.whenReady().then(async () => {
     html: "<p>Loading...</p>",
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
   });
+
+  // IPC handler for e2e testing - only register in dev/test builds
+  if (!app.isPackaged) {
+    ipcMain.handle(IPC_OPEN_FILE, async (_event, filePath: string) => {
+      if (controller) {
+        await controller.openFile(filePath);
+        return { success: true };
+      }
+      return { success: false, error: 'Controller not initialized' };
+    });
+  }
 
   await controller.start(filePath);
 
