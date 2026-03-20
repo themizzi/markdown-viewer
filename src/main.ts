@@ -11,39 +11,20 @@ import { ViewerController } from "./viewerController";
 import { createApplicationMenu } from "./applicationMenu";
 import { showOpenFileDialog } from "./openFileDialog";
 import { openFileFlow } from "./openFileFlow";
+import { resolveStartupFile } from "./startupOpenBehavior";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
 const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
 
 let mainWindow: BrowserWindow | null = null;
+let automationWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
 
-function resolveMarkdownPath(argv: string[]): string {
-  const flaggedCandidate = argv
-    .find((value) => value.startsWith("--test-file="))
-    ?.slice("--test-file=".length);
-
-  if (flaggedCandidate) {
-    return path.resolve(process.cwd(), flaggedCandidate);
-  }
-
-  const candidates = argv.filter((value) => !value.startsWith("-"));
-  const preferredCandidate = [...candidates].reverse().find((value) => value.endsWith(".md"));
-  const candidate = preferredCandidate ?? candidates.at(-1);
-  return path.resolve(process.cwd(), candidate ?? "README.md");
-}
-
-function createWindow(): BrowserWindow {
-  const window = new BrowserWindow({
-    width: 1000,
-    height: 760,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  });
+function configureViewerWindow(window: BrowserWindow): void {
+  window.setSize(1000, 760);
+  window.setSkipTaskbar(false);
+  window.setFocusable(true);
 
   void window.loadFile(path.join(__dirname, "../src/index.html"));
 
@@ -61,14 +42,74 @@ function createWindow(): BrowserWindow {
     });
   });
   Menu.setApplicationMenu(menu);
+}
+
+function createWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 1000,
+    height: 760,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  configureViewerWindow(window);
 
   return window;
 }
 
-app.whenReady().then(async () => {
-  mainWindow = createWindow();
+function shouldCreateAutomationWindow(argv: string[]): boolean {
+  return Boolean(process.env.WDIO_WORKER_ID) || argv.some((value) =>
+    value === '--enable-automation' ||
+    value.startsWith('--remote-debugging-port=') ||
+    value.startsWith('--inspect=')
+  );
+}
 
-  const filePath = resolveMarkdownPath(process.argv.slice(2));
+function createAutomationWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 1,
+    height: 1,
+    show: false,
+    focusable: true,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    }
+  });
+
+  void window.loadURL('data:text/html,<html><body>automation</body></html>');
+  return window;
+}
+
+app.whenReady().then(async () => {
+  const args = process.argv.slice(2);
+
+  if (shouldCreateAutomationWindow(args)) {
+    automationWindow = createAutomationWindow();
+  }
+  
+  const startupResolution = await resolveStartupFile(process.argv.slice(2));
+
+  if (startupResolution.kind === "no-startup-file-selected") {
+    return;
+  }
+
+  // startupResolution.kind === "file-path-resolved"
+  if (automationWindow && !automationWindow.isDestroyed()) {
+    mainWindow = automationWindow;
+    automationWindow = null;
+    configureViewerWindow(mainWindow);
+    mainWindow.show();
+  } else {
+    mainWindow = createWindow();
+  }
+
+  const filePath = startupResolution.filePath!;
   const fileReader = new FileReaderService(fs);
   const fileWatcher = new FileWatcherService(chokidar);
 
@@ -93,7 +134,7 @@ app.whenReady().then(async () => {
 
   // IPC handler for e2e testing - only register in dev/test builds
   if (!app.isPackaged) {
-    ipcMain.handle(IPC_OPEN_FILE, async (_event, filePath: string) => {
+    ipcMain.handle(IPC_OPEN_FILE, async (_event: unknown, filePath: string) => {
       if (controller) {
         await controller.openFile(filePath);
         return { success: true };

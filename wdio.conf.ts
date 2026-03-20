@@ -2,7 +2,49 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const appArgs = ["--test-file=./e2e/fixtures/test.md"];
+/**
+ * Parse app arguments from WDIO_APP_ARGS_JSON environment variable.
+ * Defaults to ["--test-file=./e2e/fixtures/test.md"] if not provided.
+ * Fails fast with clear error if malformed or not an array of strings.
+ */
+function parseAppArgs(): string[] {
+  const envVar = process.env.WDIO_APP_ARGS_JSON;
+  
+  if (!envVar) {
+    return ["--test-file=./e2e/fixtures/test.md"];
+  }
+  
+  try {
+    const parsed = JSON.parse(envVar);
+    
+    if (!Array.isArray(parsed)) {
+      throw new Error(
+        `startup-harness error: WDIO_APP_ARGS_JSON must parse to an array of strings, ` +
+        `got ${typeof parsed}`
+      );
+    }
+    
+    if (!parsed.every(arg => typeof arg === 'string')) {
+      throw new Error(
+        `startup-harness error: WDIO_APP_ARGS_JSON array must contain only strings`
+      );
+    }
+    
+    return parsed;
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      const wrapped = new Error(
+        `startup-harness error: WDIO_APP_ARGS_JSON is malformed JSON: ${error.message}`
+      ) as Error & { cause?: unknown };
+      wrapped.cause = error;
+      throw wrapped;
+    }
+    throw error;
+  }
+}
+
+const appArgs = parseAppArgs();
+const isNoArgsStartupRun = JSON.stringify(appArgs) === '[]';
 
 if (process.platform === "linux") {
   appArgs.unshift("--no-sandbox");
@@ -57,25 +99,17 @@ export const config = {
     // - Other: exclude @linux and @macos (only platform-agnostic scenarios)
     tagExpression: 
       process.platform === "darwin"
-        ? "not @linux"
+        ? isNoArgsStartupRun
+          ? "not @linux"
+          : "not @linux and not @startup-no-args"
         : process.platform === "linux"
           ? "@linux and not @macos"
           : "not @linux and not @macos"
   },
   tsConfigPath: path.join(dirname, "tsconfig.wdio.json"),
   onPrepare: async () => {
-    const { exec } = await import("node:child_process");
-    return new Promise<void>((resolve, reject) => {
-      exec("npm run package", (error, stdout, stderr) => {
-        if (error) {
-          console.error("Build failed:", stderr);
-          reject(error);
-        } else {
-          console.log("Build complete:", stdout);
-          resolve();
-        }
-      });
-    });
+    // Skip rebuild - app is already built with npm run package
+    console.log("Skipping rebuild - using pre-built app");
   },
   beforeSession: function () {
     if (process.platform === "linux") {
