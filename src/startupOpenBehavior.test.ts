@@ -92,7 +92,7 @@ describe("startupOpenBehavior", () => {
       expect(dialog.showOpenDialog).not.toHaveBeenCalled();
     });
 
-    it("rejects candidates that fail file validation (not readable or not text files)", async () => {
+    it("keeps explicit startup file arguments authoritative even when the file does not exist", async () => {
       // GIVEN
       const mockResult = { canceled: true, filePaths: [] };
       vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce(mockResult);
@@ -104,31 +104,65 @@ describe("startupOpenBehavior", () => {
       ]);
 
       // THEN
-      // Should fall through to the dialog since the file is invalid
-      expect(result.kind).toBe("no-startup-file-selected");
-      expect(dialog.showOpenDialog).toHaveBeenCalled();
+      expect(result.kind).toBe("file-path-resolved");
+      expect(result.filePath).toBe("/nonexistent-file-that-does-not-exist.md");
+      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
     });
 
-    it("rejects binary files (those containing null bytes)", async () => {
+    it("ignores scheme-like arguments such as data URLs and falls back to the startup dialog", async () => {
       // GIVEN
       const mockResult = { canceled: true, filePaths: [] };
       vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce(mockResult);
-      
-      // Create a binary file with null bytes
-      const binaryFile = path.join(tmpDir, "binary-file.bin");
-      const binaryData = Buffer.alloc(512);
-      binaryData[10] = 0; // Insert null byte
-      fs.writeFileSync(binaryFile, binaryData);
 
       // WHEN
       const { resolveStartupFile } = await import("./startupOpenBehavior");
       const result = await resolveStartupFile([
-        binaryFile
+        "data:,"
       ]);
 
       // THEN
       expect(result.kind).toBe("no-startup-file-selected");
       expect(dialog.showOpenDialog).toHaveBeenCalled();
+    });
+
+    it("treats Windows absolute paths as explicit startup file arguments", async () => {
+      // GIVEN
+      const mockResult = { canceled: true, filePaths: [] };
+      vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce(mockResult);
+
+      // WHEN
+      const { resolveStartupFile } = await import("./startupOpenBehavior");
+      const result = await resolveStartupFile([
+        "C:\\notes\\todo.md"
+      ]);
+
+      // THEN
+      expect(result.kind).toBe("file-path-resolved");
+      expect(result.filePath).toContain("C:\\notes\\todo.md");
+      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    });
+
+    it("prefers extended markdown file extensions when choosing between explicit file arguments", async () => {
+      // GIVEN
+      const mockResult = { canceled: true, filePaths: [] };
+      vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce(mockResult);
+
+      const textFile = path.join(tmpDir, "notes.txt");
+      const markdownFile = path.join(tmpDir, "notes.markdown");
+      fs.writeFileSync(textFile, "text");
+      fs.writeFileSync(markdownFile, "# markdown");
+
+      // WHEN
+      const { resolveStartupFile } = await import("./startupOpenBehavior");
+      const result = await resolveStartupFile([
+        textFile,
+        markdownFile
+      ]);
+
+      // THEN
+      expect(result.kind).toBe("file-path-resolved");
+      expect(result.filePath).toBe(markdownFile);
+      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
     });
   });
 

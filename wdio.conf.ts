@@ -1,5 +1,6 @@
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
@@ -46,6 +47,12 @@ function parseAppArgs(): string[] {
 const appArgs = parseAppArgs();
 const isNoArgsStartupRun = JSON.stringify(appArgs) === '[]';
 
+const appBinaryPath = process.platform === 'darwin'
+  ? "./release/mac-arm64/markdown-viewer.app/Contents/MacOS/markdown-viewer"
+  : process.arch === 'arm64'
+    ? "./release/linux-arm64-unpacked/markdown-viewer"
+    : "./release/linux-unpacked/markdown-viewer";
+
 if (process.platform === "linux") {
   appArgs.unshift("--no-sandbox");
 }
@@ -71,11 +78,7 @@ export const config = {
       maxInstances: 1,
       browserName: "electron",
       "wdio:electronServiceOptions": {
-        appBinaryPath: process.platform === 'darwin'
-          ? "./release/mac-arm64/markdown-viewer.app/Contents/MacOS/markdown-viewer"
-          : process.arch === 'arm64'
-            ? "./release/linux-arm64-unpacked/markdown-viewer"
-            : "./release/linux-unpacked/markdown-viewer",
+        appBinaryPath,
         appArgs
       }
     }
@@ -108,7 +111,12 @@ export const config = {
   },
   tsConfigPath: path.join(dirname, "tsconfig.wdio.json"),
   onPrepare: async () => {
-    // Skip rebuild - app is already built with npm run package
+    if (!existsSync(path.resolve(dirname, appBinaryPath))) {
+      throw new Error(
+        `Missing packaged Electron binary at ${appBinaryPath}. Run \`npm run package\` before running e2e tests.`
+      );
+    }
+
     console.log("Skipping rebuild - using pre-built app");
   },
   beforeSession: function () {

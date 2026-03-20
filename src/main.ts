@@ -27,20 +27,59 @@ function configureViewerWindow(window: BrowserWindow): void {
   window.setFocusable(true);
 
   void window.loadFile(path.join(__dirname, "../src/index.html"));
+}
 
-  const menu = createApplicationMenu(() => {
-    void openFileFlow(
-      () => controller?.getFocusedFilePath() ?? "",
-      showOpenFileDialog,
-      async (filePath) => {
-        if (controller) {
-          await controller.openFile(filePath);
+async function openOrStartFile(filePath: string): Promise<void> {
+  const window = ensureViewerWindow();
+
+  if (!controller) {
+    const fileReader = new FileReaderService(fs);
+    const fileWatcher = new FileWatcherService(chokidar);
+
+    marked.setOptions({ gfm: true });
+    const markdownService = new MarkedMarkdownService(marked);
+
+    controller = new ViewerController(
+      fileReader,
+      fileWatcher,
+      markdownService,
+      (document) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send(IPC_HTML_UPDATED, document);
         }
       }
-    ).catch((error) => {
+    );
+  }
+
+  if (controller.getFocusedFilePath()) {
+    await controller.openFile(filePath);
+  } else {
+    await controller.start(filePath);
+  }
+
+  if (!window.isVisible()) {
+    window.show();
+  }
+}
+
+async function handleOpenRequest(): Promise<void> {
+  await openFileFlow(
+    () => controller?.getFocusedFilePath() ?? "",
+    showOpenFileDialog,
+    async (filePath) => {
+      await openOrStartFile(filePath);
+    }
+  );
+}
+
+function installApplicationMenu(): void {
+  
+  const menu = createApplicationMenu(() => {
+    void handleOpenRequest().catch((error) => {
       console.error("Failed to open file:", error);
     });
   });
+
   Menu.setApplicationMenu(menu);
 }
 
@@ -86,8 +125,66 @@ function createAutomationWindow(): BrowserWindow {
   return window;
 }
 
+function ensureViewerWindow(): BrowserWindow {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return mainWindow;
+  }
+
+  if (automationWindow && !automationWindow.isDestroyed()) {
+    mainWindow = automationWindow;
+    automationWindow = null;
+    configureViewerWindow(mainWindow);
+    return mainWindow;
+  }
+
+  mainWindow = createWindow();
+  return mainWindow;
+}
+
+function registerIpcHandlers(): void {
+  ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
+    html: "<p>Loading...</p>",
+    baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  });
+
+  if (!app.isPackaged) {
+    ipcMain.handle(IPC_OPEN_FILE, async (_event: unknown, filePath: string) => {
+      try {
+        await openOrStartFile(filePath);
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        };
+      }
+    });
+  }
+}
+
+function registerActivateHandler(): void {
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length > 0) {
+      return;
+    }
+
+    if (controller?.getFocusedFilePath()) {
+      ensureViewerWindow().show();
+      return;
+    }
+
+    void handleOpenRequest().catch((error) => {
+      console.error("Failed to open file on activate:", error);
+    });
+  });
+}
+
 app.whenReady().then(async () => {
   const args = process.argv.slice(2);
+
+  installApplicationMenu();
+  registerIpcHandlers();
+  registerActivateHandler();
 
   if (shouldCreateAutomationWindow(args)) {
     automationWindow = createAutomationWindow();
@@ -99,62 +196,7 @@ app.whenReady().then(async () => {
     return;
   }
 
-  // startupResolution.kind === "file-path-resolved"
-  if (automationWindow && !automationWindow.isDestroyed()) {
-    mainWindow = automationWindow;
-    automationWindow = null;
-    configureViewerWindow(mainWindow);
-    mainWindow.show();
-  } else {
-    mainWindow = createWindow();
-  }
-
-  const filePath = startupResolution.filePath!;
-  const fileReader = new FileReaderService(fs);
-  const fileWatcher = new FileWatcherService(chokidar);
-
-  marked.setOptions({ gfm: true });
-  const markdownService = new MarkedMarkdownService(marked);
-
-  controller = new ViewerController(
-    fileReader,
-    fileWatcher,
-    markdownService,
-    (document) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send(IPC_HTML_UPDATED, document);
-      }
-    }
-  );
-
-  ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
-    html: "<p>Loading...</p>",
-    baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
-  });
-
-  // IPC handler for e2e testing - only register in dev/test builds
-  if (!app.isPackaged) {
-    ipcMain.handle(IPC_OPEN_FILE, async (_event: unknown, filePath: string) => {
-      if (controller) {
-        await controller.openFile(filePath);
-        return { success: true };
-      }
-      return { success: false, error: 'Controller not initialized' };
-    });
-  }
-
-  await controller.start(filePath);
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = createWindow();
-      const document = controller?.getHtml() ?? {
-        html: "<p>Loading...</p>",
-        baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
-      };
-      mainWindow.webContents.send(IPC_HTML_UPDATED, document);
-    }
-  });
+  await openOrStartFile(startupResolution.filePath!);
 });
 
 app.on("before-quit", async () => {
