@@ -52,12 +52,12 @@ export const config = {
     timeout: 60000,
     strict: true,
     // Platform-specific tag expression to prevent cross-platform tag leakage:
-    // - macOS: no tag filter (runs all non-explicitly-excluded scenarios)
+    // - macOS: exclude @linux (runs all non-explicitly-excluded scenarios)
     // - Linux: require @linux AND exclude @macos (only Linux-specific scenarios)
     // - Other: exclude @linux and @macos (only platform-agnostic scenarios)
     tagExpression: 
       process.platform === "darwin"
-        ? ""
+        ? "not @linux"
         : process.platform === "linux"
           ? "@linux and not @macos"
           : "not @linux and not @macos"
