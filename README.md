@@ -49,6 +49,20 @@ Run end-to-end tests:
 npm run test:e2e
 ```
 
+Run no-startup-args startup coverage (`@startup-no-args`):
+```bash
+WDIO_APP_ARGS_JSON='[]' npm run test:e2e -- --tags @startup-no-args
+```
+
+### E2E Execution Model
+
+- The suite uses standalone `@cucumber/cucumber` with `cucumber-js --config e2e/cucumber.cjs`.
+- A brand-new Electron/WebDriver session is created in `Before` for every scenario via `startWdioSession(...)`, attached to `E2EWorld`, and deleted in `After`.
+- Deterministic fixture files are rewritten before each scenario session starts in `e2e/support/runtime/fixtures.ts`.
+- App startup args come from `WDIO_APP_ARGS_JSON` (default `['--test-file=./e2e/fixtures/test.md']`) and are parsed in `e2e/support/runtime/appConfig.ts`.
+- Platform tag filtering is applied in `e2e/cucumber.cjs` to preserve existing `@linux`, `@macos`, and `@startup-no-args` behavior.
+- Packaged-binary preflight and Linux Xvfb setup are handled in `BeforeAll`/`AfterAll` via `e2e/support/hooks.ts` and `e2e/support/runtime/xvfb.ts`.
+
 ### macOS File Dialog Testing
 
 The e2e test suite includes testing for the File → Open dialog. On macOS, this requires **accessibility permissions** for AppleScript automation.

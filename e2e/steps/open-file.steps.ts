@@ -1,19 +1,23 @@
-import { When, Then, Given } from '@wdio/cucumber-framework';
-import { browser, expect } from '@wdio/globals';
+import { When, Then, Given } from "@cucumber/cucumber";
+import { expect } from "expect-webdriverio";
 import { execSync } from 'node:child_process';
 import * as path from 'node:path';
 import {
   dismissLinuxOpenDialog,
+  isLinuxOpenDialogPresent,
   selectFileInLinuxOpenDialog,
-} from '../support/linuxOpenFileDialog';
+} from "../support/linuxOpenFileDialog.ts";
+import type { E2EWorld } from "../support/world.ts";
 
-Given(/the app is showing the initial test markdown document/, async () => {
+Given(/the app is showing the initial test markdown document/, async function (this: E2EWorld) {
+  const browser = this.getBrowser();
   const appElement = await browser.$('#app');
   const text = await appElement.getText();
   expect(text).toContain('OPEN_FILE_INITIAL_FIXTURE');
 });
 
-When(/the user clicks File Open/, async () => {
+When(/the user clicks File Open/, async function (this: E2EWorld) {
+  const browser = this.getBrowser();
   // Trigger the file-open menu item from Electron app menu
   await browser.electron.execute((electron: unknown) => {
     const { Menu } = electron as { Menu: { getApplicationMenu: () => unknown } };
@@ -37,7 +41,7 @@ When(/the user clicks File Open/, async () => {
   await new Promise(resolve => setTimeout(resolve, 1000));
 });
 
-When(/the user selects the deterministic target file in the Open File dialog/, async () => {
+When(/the user selects the deterministic target file in the Open File dialog/, async function () {
   const fixturePath = path.resolve(process.cwd(), 'e2e/fixtures');
   const fileName = 'open-dialog-target.md';
   
@@ -151,7 +155,7 @@ end tell`;
 }
 
 
-When(/the user clicks Cancel on the Open File dialog/, async () => {
+When(/the user clicks Cancel on the Open File dialog/, async function () {
   if (process.platform === 'darwin') {
     // macOS: Use AppleScript to press Escape
     const script = `tell application "System Events"
@@ -181,7 +185,7 @@ end tell`;
   await new Promise(resolve => setTimeout(resolve, 1000));
 });
 
-Then(/^the Open File dialog is not present$/, async () => {
+Then(/^the Open File dialog is not present$/, async function () {
   if (process.platform === 'darwin') {
     // macOS: Use AppleScript to verify dialog is closed
     const script = `tell application "System Events"
@@ -207,17 +211,26 @@ end tell`;
        throw err;
      }
   } else if (process.platform === 'linux') {
-    // Linux: Already verified in dismissLinuxOpenDialog or other Linux-specific steps
-    // Just check if dialog is not present
-    const { isLinuxOpenDialogPresent } = await import('../support/linuxOpenFileDialog');
     const dialogPresent = isLinuxOpenDialogPresent();
     expect(dialogPresent).toBe(false);
   }
 });
 
-Then(/the app shows the selected markdown document/, async () => {
+Then(/the app shows the selected markdown document/, async function (this: E2EWorld) {
+  const browser = this.getBrowser();
   const appElement = await browser.$('#app');
   const text = await appElement.getText();
   expect(text).toContain('OPEN_FILE_TARGET_FIXTURE');
 });
 
+When(/the user dismisses the Open File dialog on Linux/, async function () {
+  if (process.platform === 'linux') {
+    await dismissLinuxOpenDialog(5000);
+  }
+});
+
+Then(/the Open File dialog is not present on Linux/, async function () {
+  if (process.platform === 'linux') {
+    expect(isLinuxOpenDialogPresent()).toBe(false);
+  }
+});
