@@ -4,3 +4,4 @@ release/
 build/
 *.log
 
+.DS_Store
