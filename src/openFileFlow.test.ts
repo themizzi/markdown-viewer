@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BrowserWindow } from 'electron';
 
 describe('openFileFlow', () => {
   let getCurrentFilePath: () => string;
-  let showOpenFileDialog: (defaultPath?: string) => Promise<{ canceled: boolean; filePaths: string[] }>;
+  let showOpenFileDialog: (defaultPath?: string, parentWindow?: BrowserWindow) => Promise<{ canceled: boolean; filePaths: string[] }>;
   let switchFile: (filePath: string) => Promise<void>;
 
   beforeEach(() => {
@@ -54,8 +55,8 @@ describe('openFileFlow', () => {
     // WHEN
     await openFileFlow(getCurrentFilePath, showOpenFileDialog, switchFile);
 
-    // THEN
-    expect(showOpenFileDialog).toHaveBeenCalledWith(currentPath);
+     // THEN
+    expect(showOpenFileDialog).toHaveBeenCalledWith(currentPath, undefined);
   });
 
   it('dialog errors surface to the caller so the existing main.ts error logging path still works', async () => {

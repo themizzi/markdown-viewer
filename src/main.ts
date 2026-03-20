@@ -14,6 +14,7 @@ import { openFileFlow } from "./openFileFlow";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
+const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
 
 let mainWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
@@ -47,14 +48,22 @@ function createWindow(): BrowserWindow {
   void window.loadFile(path.join(__dirname, "../src/index.html"));
 
   const menu = createApplicationMenu(() => {
+    console.log("File Open clicked - starting openFileFlow");
+    console.log("mainWindow:", window, "destroyed:", window?.isDestroyed?.());
     void openFileFlow(
       () => controller?.getFocusedFilePath() ?? "",
-      showOpenFileDialog,
+      (defaultPath, parentWindow) => {
+        console.log("showOpenFileDialog called with defaultPath:", defaultPath, "parentWindow:", parentWindow);
+        return showOpenFileDialog(defaultPath, parentWindow);
+      },
       async (filePath) => {
+        console.log("openFileFlow callback - switching to file:", filePath);
         if (controller) {
           await controller.openFile(filePath);
+          console.log("File switched successfully");
         }
-      }
+      },
+      window
     ).catch((error) => {
       console.error("Failed to open file:", error);
     });
@@ -88,6 +97,15 @@ app.whenReady().then(async () => {
   ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
     html: "<p>Loading...</p>",
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  });
+
+  // IPC handler for e2e testing - directly open a specific file
+  ipcMain.handle(IPC_OPEN_FILE, async (_event, filePath: string) => {
+    if (controller) {
+      await controller.openFile(filePath);
+      return { success: true };
+    }
+    return { success: false, error: 'Controller not initialized' };
   });
 
   await controller.start(filePath);
