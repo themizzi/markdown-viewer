@@ -1,10 +1,14 @@
-name: Unit Tests
+name: Unit Tests and macOS E2E
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+concurrency:
+  group: tests
+  cancel-in-progress: true
 
 jobs:
   test:
