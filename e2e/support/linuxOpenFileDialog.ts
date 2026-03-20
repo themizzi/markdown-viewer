@@ -3,6 +3,42 @@ import { execSync } from 'node:child_process';
 const LINUX_OPEN_DIALOG = 'LINUX_OPEN_DIALOG:';
 
 /**
+ * List all windows currently available on the X display.
+ * Useful for debugging to see what windows are accessible.
+ */
+export function listAllWindows(): string {
+  try {
+    const output = execSync(
+      `xdotool search --onlyvisible --class '' 2>/dev/null || xdotool search --class ''`,
+      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
+    ).trim();
+    
+    const windowIds = output.split('\n').filter(id => id);
+    const windowInfo: string[] = [];
+    
+    for (const winId of windowIds) {
+      try {
+        const name = execSync(`xdotool getwindowname ${winId}`, { 
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'ignore']
+        }).trim();
+        const classInfo = execSync(`xdotool getwindowclassname ${winId}`, { 
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'ignore']
+        }).trim();
+        windowInfo.push(`ID: ${winId}, Name: "${name}", Class: "${classInfo}"`);
+      } catch {
+        windowInfo.push(`ID: ${winId}, Name: [error], Class: [error]`);
+      }
+    }
+    
+    return windowInfo.join('\n');
+  } catch (error) {
+    return `Unable to list windows: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+/**
  * Wait for the native open dialog to appear on Linux.
  * Uses xdotool to search for common file chooser window titles.
  * @param maxWaitMs Maximum time to wait in milliseconds (default 10000)
@@ -81,6 +117,113 @@ export function isLinuxOpenDialogPresent(): boolean {
 }
 
 /**
+ * Select a file in the open dialog by navigating to the folder and typing the filename.
+ * Uses Ctrl+L to access the location bar, types the path, and then types the filename.
+ * @param folderPath Absolute path to the folder containing the file
+ * @param fileName Name of the file to select (e.g., "open-dialog-target.md")
+ * @param maxWaitMs Maximum time to wait (default 10000)
+ */
+export async function selectFileInLinuxOpenDialog(
+  folderPath: string,
+  fileName: string,
+  maxWaitMs = 10000
+): Promise<void> {
+  try {
+    console.log(`${LINUX_OPEN_DIALOG} Waiting for dialog to appear...`);
+    await waitForLinuxOpenDialog(Math.min(maxWaitMs, 10000));
+    
+    // Find the open dialog window
+    const windowId = execSync(
+      `xdotool search --name '(Open File|Choose File|Select a File)' 2>/dev/null | head -1`,
+      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
+    ).trim();
+    
+    if (!windowId) {
+      console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
+      throw new Error(
+        `${LINUX_OPEN_DIALOG} Open dialog window not found. ` +
+        `Make sure xdotool is installed: apt-get install xdotool`
+      );
+    }
+    
+    console.log(`${LINUX_OPEN_DIALOG} Found dialog window: ${windowId}`);
+    
+    // Focus the dialog window
+    execSync(`xdotool windowfocus ${windowId}`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    // Give it a moment to focus
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Try Ctrl+L to access location bar (GTK file chooser)
+    console.log(`${LINUX_OPEN_DIALOG} Attempting to access location bar with Ctrl+L...`);
+    execSync(`xdotool key ctrl+l`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Clear any existing text and type the folder path
+    console.log(`${LINUX_OPEN_DIALOG} Typing folder path: ${folderPath}`);
+    execSync(`xdotool key ctrl+a`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    execSync(`xdotool type '${folderPath.replace(/'/g, "'\\''")}'`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Press Return to navigate to the folder
+    console.log(`${LINUX_OPEN_DIALOG} Pressing Return to navigate to folder...`);
+    execSync(`xdotool key Return`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    // Wait for folder to load
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Type the filename
+    console.log(`${LINUX_OPEN_DIALOG} Typing filename: ${fileName}`);
+    execSync(`xdotool type '${fileName.replace(/'/g, "'\\''")}'`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Press Return to select and open the file
+    console.log(`${LINUX_OPEN_DIALOG} Pressing Return to open file...`);
+    execSync(`xdotool key Return`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    // Wait for file to be loaded and dialog to close
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    console.log(`${LINUX_OPEN_DIALOG} File selection completed`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
+    const err = new Error(
+      `${LINUX_OPEN_DIALOG} Failed to select file in dialog: ${message}`
+    );
+    (err as { cause?: unknown }).cause = error;
+    throw err;
+  }
+}
+
+/**
  * Dismiss the native open dialog on Linux by sending Escape key.
  * Waits for the dialog to appear before attempting dismissal to reduce flakiness.
  * Uses xdotool to send key input to the focused window.
@@ -100,6 +243,7 @@ export async function dismissLinuxOpenDialog(maxWaitMs = 5000): Promise<void> {
     ).trim();
     
     if (!windowId) {
+      console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
       throw new Error(
         `${LINUX_OPEN_DIALOG} Open dialog window not found. ` +
         `Make sure xdotool is installed: apt-get install xdotool`
@@ -130,6 +274,7 @@ export async function dismissLinuxOpenDialog(maxWaitMs = 5000): Promise<void> {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    console.log(`${LINUX_OPEN_DIALOG} Available windows:\n${listAllWindows()}`);
     const err = new Error(
       `${LINUX_OPEN_DIALOG} Failed to dismiss dialog: ${message}`
     );

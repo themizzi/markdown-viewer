@@ -1,8 +1,7 @@
-import { dialog, BrowserWindow } from 'electron';
+import { dialog } from 'electron';
 
 export async function showOpenFileDialog(
-  defaultPath?: string,
-  parentWindow?: BrowserWindow
+  defaultPath?: string
 ): Promise<{ canceled: boolean; filePaths: string[] }> {
   const options = {
     properties: ['openFile' as const],
@@ -13,9 +12,7 @@ export async function showOpenFileDialog(
     ...(defaultPath && { defaultPath })
   };
 
-  if (parentWindow) {
-    return dialog.showOpenDialog(parentWindow, options);
-  } else {
-    return dialog.showOpenDialog(options);
-  }
+  // Open as a standalone modal dialog (not attached to a window as a sheet)
+  // This is easier to automate with AppleScript in e2e tests
+  return dialog.showOpenDialog(options);
 }

@@ -49,21 +49,16 @@ function createWindow(): BrowserWindow {
 
   const menu = createApplicationMenu(() => {
     console.log("File Open clicked - starting openFileFlow");
-    console.log("mainWindow:", window, "destroyed:", window?.isDestroyed?.());
     void openFileFlow(
       () => controller?.getFocusedFilePath() ?? "",
-      (defaultPath, parentWindow) => {
-        console.log("showOpenFileDialog called with defaultPath:", defaultPath, "parentWindow:", parentWindow);
-        return showOpenFileDialog(defaultPath, parentWindow);
-      },
+      showOpenFileDialog,
       async (filePath) => {
         console.log("openFileFlow callback - switching to file:", filePath);
         if (controller) {
           await controller.openFile(filePath);
           console.log("File switched successfully");
         }
-      },
-      window
+      }
     ).catch((error) => {
       console.error("Failed to open file:", error);
     });

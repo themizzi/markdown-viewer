@@ -1,5 +1,3 @@
-import { BrowserWindow } from 'electron';
-
 /**
  * Orchestrates the file open dialog flow.
  * 
@@ -10,14 +8,13 @@ import { BrowserWindow } from 'electron';
  */
 export async function openFileFlow(
   getCurrentFilePath: () => string,
-  showOpenFileDialog: (defaultPath?: string, parentWindow?: BrowserWindow) => Promise<{ canceled: boolean; filePaths: string[] }>,
-  switchFile: (filePath: string) => Promise<void>,
-  parentWindow?: BrowserWindow
+  showOpenFileDialog: (defaultPath?: string) => Promise<{ canceled: boolean; filePaths: string[] }>,
+  switchFile: (filePath: string) => Promise<void>
 ): Promise<void> {
   const currentPath = getCurrentFilePath();
   console.log("openFileFlow: current path =", currentPath);
   
-  const result = await showOpenFileDialog(currentPath, parentWindow);
+  const result = await showOpenFileDialog(currentPath);
   console.log("openFileFlow: dialog result =", result);
 
   if (result.canceled || result.filePaths.length === 0) {

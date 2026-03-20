@@ -31,28 +31,96 @@ When(/the user clicks File Open/, async () => {
   
   console.log('Menu click result:', result);
   
-  // Wait longer for dialog to appear and be ready for interaction
-  await browser.pause(2000);
+  // Wait for dialog to appear
+  await new Promise(resolve => setTimeout(resolve, 1000));
 });
 
 When(/the user selects the deterministic target file in the Open File dialog/, async () => {
-  const targetPath = '/Users/themizzi/GitHub/markdown-viewer/e2e/fixtures/open-dialog-target.md';
+  const fixturePath = '/Users/themizzi/GitHub/markdown-viewer/e2e/fixtures';
+  const fileName = 'open-dialog-target.md';
   
-  // Use the exposed API to open the file directly
-  // This simulates what would happen if the user selected the file in the dialog
-  interface ViewerApi {
-    openFile: (filePath: string) => Promise<{ success: boolean; error?: string }>;
-  }
-  const result = await browser.execute((filePath: string) => {
-    return (window as { viewerApi: ViewerApi }).viewerApi.openFile(filePath);
-  }, targetPath);
-  
-  if (!result.success) {
-    throw new Error(`Failed to open file: ${result.error}`);
+  // AppleScript to navigate to the fixtures directory and select the target file
+  // The dialog opens as a standalone modal window (not a sheet)
+  const script = `
+tell application "System Events"
+  tell process "markdown-viewer"
+    -- Wait for the Open dialog window to appear
+    set dialogWindowName to "Open"
+    repeat until exists window dialogWindowName
+      delay 0.2
+    end repeat
+    
+    -- Interact with the Open dialog window
+    tell window dialogWindowName
+      -- Press Cmd+Shift+G to open "Go to Folder" dialog
+      keystroke "g" using {command down, shift down}
+      delay 1.0
+      
+      -- Wait for the "Go to Folder" sheet to appear within the dialog
+      repeat with i from 1 to 20
+        try
+          if exists sheet 1 then
+            exit repeat
+          end if
+        end try
+        delay 0.1
+      end repeat
+      
+      delay 0.5
+      
+      -- Set the path in the text field of the sheet
+      try
+        set value of text field 1 of sheet 1 to "${fixturePath}"
+      end try
+      delay 0.3
+      
+      -- Press Return to navigate to the folder
+      keystroke return
+      delay 1.5
+      
+      -- Wait for the sheet to close
+      repeat with i from 1 to 20
+        try
+          if not (exists sheet 1) then
+            exit repeat
+          end if
+        end try
+        delay 0.1
+      end repeat
+      
+      delay 0.5
+      
+      -- Type the filename to select it
+      keystroke "${fileName}"
+      delay 0.5
+      
+      -- Press Return to select and open the file
+      keystroke return
+      delay 1.0
+    end tell
+  end tell
+end tell`;
+
+  try {
+    execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    let errorMessage = `Failed to select file in Open File dialog: ${message}`;
+    
+    // Check for AppleScript permissions error
+    if (message.includes('Not authorized') || message.includes('permission')) {
+      errorMessage = `AppleScript permissions blocked automation. Please enable System Events in Security & Privacy settings.`;
+    }
+    
+    const err = new Error(errorMessage);
+    if (error instanceof Error) {
+      err.stack = error.stack;
+    }
+    throw err;
   }
   
   // Wait for file to be loaded
-  await browser.pause(1000);
+  await new Promise(resolve => setTimeout(resolve, 1000));
 });
 
 
@@ -80,7 +148,7 @@ end tell`;
   }
   
   // Wait for dialog to close
-  await browser.pause(1000);
+  await new Promise(resolve => setTimeout(resolve, 1000));
 });
 
 Then(/^the Open File dialog is not present$/, async () => {
