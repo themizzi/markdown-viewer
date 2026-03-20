@@ -22,7 +22,7 @@
   },
   "build": {
     "appId": "com.markdownviewer.app",
-    "productName": "markdown-viewer",
+    "productName": "Markdown Viewer",
     "icon": "build/icon.png",
     "asar": true,
     "asarUnpack": [

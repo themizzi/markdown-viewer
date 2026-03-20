@@ -3,7 +3,7 @@ import { createApplicationMenu } from "./applicationMenu";
 
 vi.mock("electron", () => ({
   app: {
-    name: "markdown-viewer"
+    name: "Markdown Viewer"
   },
   Menu: {
     buildFromTemplate: (template: unknown[]) => template
@@ -43,6 +43,24 @@ function buildFakeMenu(template: unknown[]): FakeMenu {
 }
 
 describe("applicationMenu", () => {
+  it("uses the app name for the macOS application menu", () => {
+    const platformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
+    Object.defineProperty(process, "platform", {
+      value: "darwin"
+    });
+
+    try {
+      const template = createApplicationMenu() as unknown as unknown[];
+      const menu = buildFakeMenu(template);
+
+      expect(menu.items[0]?.label).toBe("Markdown Viewer");
+    } finally {
+      if (platformDescriptor) {
+        Object.defineProperty(process, "platform", platformDescriptor);
+      }
+    }
+  });
+
   it("creates a File menu", () => {
     const template = createApplicationMenu() as unknown as unknown[];
     const menu = buildFakeMenu(template);
