@@ -1,20 +1,15 @@
-import { Before, After, BeforeAll, AfterAll } from '@wdio/cucumber-framework';
-import { browser } from '@wdio/globals';
-import * as fs from 'fs';
-import * as path from 'path';
-import { execSync } from 'node:child_process';
+import { Before, After, BeforeAll, AfterAll, setDefaultTimeout } from "@cucumber/cucumber";
+import { execSync } from "node:child_process";
+import type { E2EWorld } from "./world.ts";
+import { buildRuntimeSessionConfig, createElectronSession } from "./runtime/session.ts";
+import { ensureFixturesDir, writeDeterministicFixtures } from "./runtime/fixtures.ts";
+import { assertPackagedBinaryExists, resolveAppBinaryPath } from "./runtime/appConfig.ts";
+import { startXvfbIfNeeded, stopXvfbIfStarted } from "./runtime/xvfb.ts";
 
-const fixturesDir = path.resolve(process.cwd(), 'e2e/fixtures');
-const testFile = path.join(fixturesDir, 'test.md');
-const openDialogTargetFile = path.join(fixturesDir, 'open-dialog-target.md');
-const sampleImage = path.join(fixturesDir, 'sample.png');
-const sampleImageBuffer = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9pF8nKQAAAAASUVORK5CYII=',
-  'base64'
-);
+setDefaultTimeout(60_000);
 
-async function closeElectronApp(): Promise<void> {
-  if (!browser.sessionId) {
+async function closeElectronApp(browser: WebdriverIO.Browser | undefined): Promise<void> {
+  if (!browser?.sessionId) {
     return;
   }
 
@@ -29,7 +24,7 @@ async function closeElectronApp(): Promise<void> {
   try {
     await browser.electron.execute((electron) => {
       const windows = electron.BrowserWindow.getAllWindows();
-      windows.forEach((win: Record<string, unknown>) => {
+      windows.forEach((win) => {
         if (!win.isDestroyed()) {
           win.destroy();
         }
@@ -50,49 +45,45 @@ async function closeElectronApp(): Promise<void> {
 function cleanupLinuxDialogs(): void {
   try {
     // Kill any remaining file chooser or dialog processes
-    execSync(`pkill -f 'zenity|kdialog' 2>/dev/null || true`, {
-      stdio: ['pipe', 'pipe', 'ignore'],
+    execSync("pkill -f 'zenity|kdialog' 2>/dev/null || true", {
+      stdio: ["pipe", "pipe", "ignore"],
     });
   } catch {
     // Cleanup is best-effort
   }
 }
 
-BeforeAll(async () => {
-  if (!fs.existsSync(fixturesDir)) {
-    fs.mkdirSync(fixturesDir, { recursive: true });
-  }
+BeforeAll(() => {
+  assertPackagedBinaryExists(resolveAppBinaryPath());
+  startXvfbIfNeeded();
+  ensureFixturesDir();
 });
 
-Before(async () => {
-  const initialFixtureContent = `# Test Markdown
+Before(async function (this: E2EWorld) {
+  ensureFixturesDir();
+  writeDeterministicFixtures();
 
-This is a **test** document.
-
-- Item 1
-- Item 2
-
-OPEN_FILE_INITIAL_FIXTURE
-`;
-
-  const targetFixtureContent = `# Target Test Document
-
-OPEN_FILE_TARGET_FIXTURE
-
-This is the target document selected from the Open File dialog.
-`;
-
-  fs.writeFileSync(testFile, initialFixtureContent);
-  fs.writeFileSync(openDialogTargetFile, targetFixtureContent);
-  fs.writeFileSync(sampleImage, sampleImageBuffer);
+  const { capabilities } = buildRuntimeSessionConfig();
+  const browser = await createElectronSession(capabilities);
+  this.setBrowser(browser);
 });
 
-After(async () => {
+After(async function (this: E2EWorld) {
+  const browser = this.getBrowserOrUndefined();
+
   // Canonical cleanup: handle Linux dialog processes first, then close Electron
   cleanupLinuxDialogs();
-  await closeElectronApp();
+  await closeElectronApp(browser);
+  if (browser) {
+    try {
+      await browser.deleteSession();
+    } catch {
+      // best-effort cleanup
+    }
+  }
+  this.clearBrowser();
 });
 
 AfterAll(async () => {
-  // Cleanup after all tests
+  stopXvfbIfStarted();
 });
