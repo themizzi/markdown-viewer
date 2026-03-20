@@ -67,6 +67,8 @@ BeforeAll(async () => {
 Before(async () => {
   const initialFixtureContent = `# Test Markdown
 
+This is a **test** document.
+
 - Item 1
 - Item 2
 
