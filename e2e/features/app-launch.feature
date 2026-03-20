@@ -1,8 +1,7 @@
-Feature: Markdown Viewer Application
+Feature: Application startup with a file argument
 
-  Scenario: Application launches and displays markdown content
-    Given the markdown viewer application is running
-    When the page loads
+  Scenario: Launching with a startup file argument opens that file
+    When the app launches with the startup file argument
     Then the user should see the markdown rendered as HTML
     And the heading "Test Markdown" should be visible
     And the bold text "test" should be visible

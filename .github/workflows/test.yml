@@ -22,3 +22,4 @@ jobs:
       - run: npm test
       - run: npm run package
       - run: npm run test:e2e:headless
+      - run: WDIO_APP_ARGS_JSON='[]' npm run test:e2e:headless -- --spec ./e2e/features/startup-open-dialog.feature
