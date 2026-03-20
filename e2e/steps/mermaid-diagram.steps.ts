@@ -1,12 +1,14 @@
-import { When, Then } from '@wdio/cucumber-framework';
-import { $, browser, expect } from '@wdio/globals';
+import { When, Then } from "@cucumber/cucumber";
+import { expect } from "expect-webdriverio";
 import * as fs from 'fs';
 import * as path from 'path';
+import type { E2EWorld } from "../support/world.ts";
 
 const fixturesDir = path.resolve(process.cwd(), 'e2e/fixtures');
 const testFile = path.join(fixturesDir, 'test.md');
 
-When(/the markdown file contains a mermaid code block/, async () => {
+When(/the markdown file contains a mermaid code block/, async function (this: E2EWorld) {
+  const browser = this.getBrowser();
   const mermaidContent = `# Test
 
 \`\`\`mermaid
@@ -18,12 +20,13 @@ graph TD
   await browser.pause(2000);
 });
 
-Then(/the user should see a rendered mermaid diagram/, async () => {
+Then(/the user should see a rendered mermaid diagram/, async function (this: E2EWorld) {
+  const browser = this.getBrowser();
   await browser.waitUntil(async () => {
-    const svg = await $('.mermaid svg');
+    const svg = await browser.$('.mermaid svg');
     return svg.isExisting();
   }, { timeout: 5000 });
 
-  await expect(await $('.mermaid')).toBeDisplayed();
-  expect(await $('.mermaid svg').isExisting()).toBe(true);
+  await expect(await browser.$('.mermaid')).toBeDisplayed();
+  expect(await browser.$('.mermaid svg').isExisting()).toBe(true);
 });

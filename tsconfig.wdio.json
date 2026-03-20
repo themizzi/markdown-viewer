@@ -3,11 +3,12 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "types": ["node", "@wdio/cucumber-framework", "@wdio/globals/types"],
+    "types": ["node", "@cucumber/cucumber", "webdriverio", "expect-webdriverio", "@wdio/electron-types"],
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["wdio.conf.ts", "e2e/**/*.ts"]
+  "include": ["e2e/**/*.ts"]
 }

@@ -1,11 +1,13 @@
-import { When, Then } from '@wdio/cucumber-framework';
-import { $, browser, expect } from '@wdio/globals';
+import { When, Then } from "@cucumber/cucumber";
+import { expect } from "expect-webdriverio";
 import {
   verifyMacOpenDialogPresent,
   dismissMacOpenDialog,
-} from '../support/macOpenFileDialog';
+} from "../support/macOpenFileDialog.ts";
+import type { E2EWorld } from "../support/world.ts";
 
-When(/^the app launches with the startup file argument$/, async () => {
+When(/^the app launches with the startup file argument$/, async function (this: E2EWorld) {
+  const browser = this.getBrowser();
   // Verify the run is using WDIO_APP_ARGS_JSON='["--test-file=./e2e/fixtures/test.md"]'
   // or the documented default equivalent
   const appArgsJson = process.env.WDIO_APP_ARGS_JSON;
@@ -26,34 +28,35 @@ When(/^the app launches with the startup file argument$/, async () => {
 
   // Wait for the content to load
   await browser.waitUntil(async () => {
-    const text = await $('#app').getText();
+    const text = await browser.$("#app").getText();
     return text.length > 0;
   }, { timeout: 5000 });
 });
 
-Then(/the user should see the markdown rendered as HTML/, async () => {
-  const appContent = await $('#app').getHTML();
+Then(/the user should see the markdown rendered as HTML/, async function (this: E2EWorld) {
+  const appContent = await this.getBrowser().$("#app").getHTML();
   expect(appContent).toContain('<h1');
 });
 
-Then(/the heading "([^"]+)" should be visible/, async (headingText: string) => {
-  const heading = await $(`h1=${headingText}`);
+Then(/the heading "([^"]+)" should be visible/, async function (this: E2EWorld, headingText: string) {
+  const heading = await this.getBrowser().$(`h1=${headingText}`);
   await expect(heading).toBeDisplayed();
 });
 
-Then(/the bold text "([^"]+)" should be visible/, async (text: string) => {
-  const bold = await $(`strong=${text}`);
+Then(/the bold text "([^"]+)" should be visible/, async function (this: E2EWorld, text: string) {
+  const bold = await this.getBrowser().$(`strong=${text}`);
   await expect(bold).toBeDisplayed();
 });
 
-Then(/the list items "([^"]+)" and "([^"]+)" should be visible/, async (item1: string, item2: string) => {
-  const li1 = await $(`li=${item1}`);
-  const li2 = await $(`li=${item2}`);
+Then(/the list items "([^"]+)" and "([^"]+)" should be visible/, async function (this: E2EWorld, item1: string, item2: string) {
+  const browser = this.getBrowser();
+  const li1 = await browser.$(`li=${item1}`);
+  const li2 = await browser.$(`li=${item2}`);
   await expect(li1).toBeDisplayed();
   await expect(li2).toBeDisplayed();
 });
 
-When(/the app launches without a startup file argument/, async () => {
+When(/the app launches without a startup file argument/, async function () {
   // Verify the run is using WDIO_APP_ARGS_JSON='[]'
   const appArgsJson = process.env.WDIO_APP_ARGS_JSON;
   if (appArgsJson !== '[]') {
@@ -65,17 +68,18 @@ When(/the app launches without a startup file argument/, async () => {
   // App is already launched at this point via wdio harness
 });
 
-Then(/the standalone Open File dialog is present/, async () => {
+Then(/the standalone Open File dialog is present/, async function () {
   // Verify the native dialog is visible via AppleScript
   await verifyMacOpenDialogPresent(10000);
 });
 
-Then(/the user dismisses the startup Open File dialog/, async () => {
+Then(/the user dismisses the startup Open File dialog/, async function () {
   // Dismiss the dialog with AppleScript cleanup
   await dismissMacOpenDialog();
 });
 
-Then(/the app remains open with no browser window/, async () => {
+Then(/the app remains open with no browser window/, async function (this: E2EWorld) {
+  const browser = this.getBrowser();
   try {
     const state = await browser.electron.execute((electron) => {
       const windows = electron.BrowserWindow.getAllWindows();
