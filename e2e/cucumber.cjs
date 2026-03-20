@@ -46,8 +46,7 @@ const appArgs = parseAppArgsFromEnv();
 module.exports = {
   default: {
     paths: ["e2e/features/*.feature"],
-    requireModule: ["tsx/cjs"],
-    require: ["e2e/support/world.ts", "e2e/support/hooks.ts", "e2e/steps/*.ts"],
+    import: ["tsx", "e2e/support/world.ts", "e2e/support/hooks.ts", "e2e/steps/*.ts"],
     strict: true,
     parallel: 1,
     retry: 0,
