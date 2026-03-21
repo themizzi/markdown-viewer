@@ -2,9 +2,7 @@ import { Menu, MenuItemConstructorOptions, app, shell } from "electron";
 
 export function createApplicationMenu(
   onOpen: () => void = () => {},
-  onToggleToc: () => void = () => {},
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onSidebarVisibilityChanged: (visible: boolean) => void = () => {}
+  onToggleToc: () => void = () => {}
 ): Menu {
   const isMac = process.platform === "darwin";
 

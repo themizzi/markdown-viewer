@@ -86,19 +86,6 @@ function installApplicationMenu(): void {
     },
     () => {
       sidebarVisibility?.toggle();
-    },
-    (visible: boolean) => {
-      // Update menu item checked state when visibility changes
-      const appMenu = Menu.getApplicationMenu();
-      if (appMenu) {
-        const viewMenu = appMenu.items.find((item) => item.label === "View");
-        if (viewMenu && viewMenu.submenu) {
-          const tocItem = viewMenu.submenu.items.find((item) => item.id === "view-toggle-table-of-contents");
-          if (tocItem) {
-            tocItem.checked = visible;
-          }
-        }
-      }
     }
   );
 
