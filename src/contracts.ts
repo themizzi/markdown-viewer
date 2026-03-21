@@ -10,13 +10,20 @@ export interface FileWatcher {
   watch(filePath: string, onChange: () => void): Promise<WatchHandle>;
 }
 
+export interface TableOfContentsItem {
+  id: string;
+  text: string;
+  level: number; // 1-6 for h1-h6
+}
+
 export interface MarkdownRenderer {
-  render(markdown: string): string;
+  render(markdown: string): { html: string; toc?: TableOfContentsItem[] };
 }
 
 export interface RenderedDocument {
   html: string;
   baseHref: string;
+  toc?: TableOfContentsItem[];
 }
 
 export interface MermaidApi {

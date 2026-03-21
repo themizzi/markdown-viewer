@@ -13,6 +13,10 @@ export class HtmlRenderer {
     this.diagramRenderers = diagramRenderers;
   }
 
+  getRoot(): HTMLElement {
+    return this.root;
+  }
+
   async render(html: string): Promise<void> {
     this.root.innerHTML = html;
     for (const renderer of this.diagramRenderers) {
