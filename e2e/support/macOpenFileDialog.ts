@@ -1,6 +1,9 @@
 import { execSync } from 'node:child_process';
+import * as path from 'node:path';
 
 const MAC_OPEN_DIALOG = 'MAC_OPEN_DIALOG:';
+
+const fixturesDir = path.resolve(process.cwd(), 'e2e/fixtures');
 
 function runAppleScript(script: string): string {
   return execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, {
@@ -130,5 +133,57 @@ export async function dismissMacOpenDialog(): Promise<void> {
       wrapped.cause = error;
     }
     throw wrapped;
+  }
+}
+
+export async function openFileViaDialog(fileName: string): Promise<void> {
+  const script = `
+    tell application "System Events"
+      tell process "markdown-viewer"
+        set frontmost to true
+        delay 0.3
+        
+        -- Trigger Cmd+O to open File menu
+        keystroke "o" using command down
+        delay 1
+        
+        -- Wait for dialog to appear
+        repeat 10 times
+          try
+            if (exists window "Open") then
+              exit repeat
+            end if
+          end try
+          delay 0.2
+        end repeat
+        
+        -- Navigate to folder with Cmd+Shift+G
+        keystroke "g" using {command down, shift down}
+        delay 0.5
+        
+        -- Type the folder path
+        keystroke "${fixturesDir.replace(/\//g, "/")}"
+        delay 0.3
+        key code 36 -- Return
+        delay 1
+        
+        -- Type the filename
+        keystroke "${fileName}"
+        delay 0.3
+        key code 36 -- Return
+      end tell
+    end tell
+  `;
+  
+  try {
+    runAppleScript(script);
+    // Wait for file to load
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  } catch (error) {
+    const err = new Error(
+      `${MAC_OPEN_DIALOG} Failed to open file via dialog: ${error instanceof Error ? error.message : String(error)}`
+    );
+    (err as { cause?: unknown }).cause = error;
+    throw err;
   }
 }

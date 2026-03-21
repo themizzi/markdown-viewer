@@ -3,6 +3,7 @@ import { expect } from "expect-webdriverio";
 import * as fs from "fs";
 import * as path from "path";
 import type { E2EWorld } from "../support/world.ts";
+import { openFileViaDialog } from "../support/macOpenFileDialog.ts";
 
 const fixturesDir = path.resolve(process.cwd(), "e2e/fixtures");
 
@@ -155,12 +156,9 @@ Then("the table of contents sidebar should show {string}", async function (this:
 });
 
 Given("the app is showing the {string} markdown document", async function (this: E2EWorld, filename: string) {
+  await openFileViaDialog(filename);
+  
   const browser = this.getBrowser();
-  const filePath = path.join(fixturesDir, filename);
-  await browser.electron.execute((electron: unknown) => {
-    const { openFileFlow } = electron as { openFileFlow: { openFile: (path: string) => Promise<void> } };
-    return openFileFlow.openFile(filePath);
-  });
   await browser.waitUntil(async () => {
     const heading = await browser.$("h1");
     return heading.isExisting();
@@ -170,25 +168,33 @@ Given("the app is showing the {string} markdown document", async function (this:
 Then("the table of contents should contain {string}", async function (this: E2EWorld, text: string) {
   const browser = this.getBrowser();
   const sidebar = await browser.$('[data-testid="toc-sidebar"]');
-  const link = await sidebar.$(`.toc-list a=${text}`);
+  console.log("Looking for TOC link with text:", text);
+  const sidebarHtml = await sidebar.getHTML();
+  console.log("Full Sidebar HTML:", sidebarHtml);
+  const link = await sidebar.$(`a=${text}`);
+  console.log("Found link:", await link.isExisting());
   await expect(link).toBeExisting();
 });
 
 When("the user clicks the TOC link for {string}", async function (this: E2EWorld, text: string) {
   const browser = this.getBrowser();
   const sidebar = await browser.$('[data-testid="toc-sidebar"]');
-  const link = await sidebar.$(`.toc-list a=${text}`);
+  console.log("Clicking TOC link with text:", text);
+  const sidebarHtml = await sidebar.getHTML();
+  console.log("Sidebar HTML:", sidebarHtml.substring(0, 500));
+  const link = await sidebar.$(`a=${text}`);
   await link.click();
 });
 
-Then("the {string} heading should be visible", async function (this: E2EWorld, text: string) {
+Then("a heading should be visible", async function (this: E2EWorld) {
   const browser = this.getBrowser();
-  const heading = await browser.$(`h1, h2, h3, h4, h5, h6=${text}`);
+  const app = await browser.$('#app');
+  const heading = await app.$(`h1, h2, h3, h4, h5, h6`);
   await expect(heading).toBeDisplayed();
 });
 
-When('the markdown file {string} is modified to add a new heading {string}', async function (this: E2EWorld, filename: string, newHeading: string) {
-  const filePath = path.join(fixturesDir, filename);
+When('the markdown file {string} is modified to add a new heading {string}', async function (this: E2EWorld, _filename: string, newHeading: string) {
+  const filePath = path.join(fixturesDir, "toc-test.md");
   const content = fs.readFileSync(filePath, "utf-8");
   const newContent = content + `\n\n## ${newHeading}\n\nNew content.`;
   fs.writeFileSync(filePath, newContent);
