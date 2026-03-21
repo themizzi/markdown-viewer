@@ -26,11 +26,12 @@ let controller: ViewerController | null = null;
 let sidebarVisibility: SidebarVisibility | undefined = undefined;
 
 function executeCommand(command: string): void {
-  console.warn(`[Command] Executing command: ${command}`);
+  console.warn(`[executeCommand] Called with: ${command}`);
   switch (command) {
     case "toggle-toc":
-      console.warn("[Command] Toggling TOC sidebar");
+      console.warn(`[executeCommand] sidebarVisibility is: ${sidebarVisibility}`);
       sidebarVisibility?.toggle();
+      console.warn(`[executeCommand] Called toggle() on sidebarVisibility`);
       break;
     case "open-file":
       void handleOpenRequest().catch((error) => {
@@ -47,9 +48,13 @@ function installBeforeInputEventHandler(window: BrowserWindow): void {
     code: string;
   }
   window.webContents.on("before-input-event", (_event, input: Input) => {
-    console.warn(`[before-input-event] Received: key="${input.key}" type="${input.type}" code="${input.code}"`);
-    if (input.key === COMMANDS.toggleToc.shortcut && input.type === "keyDown") {
-      console.warn("[before-input-event] MATCH! Executing toggle-toc");
+    console.warn(`[main] before-input-event: key="${input.key}" type="${input.type}"`);
+    const shortcut = COMMANDS.toggleToc.shortcut;
+    const keyMatch = input.key === shortcut;
+    const typeMatch = input.type === "keyDown";
+    console.warn(`[main] Comparing: input.key="${input.key}" === "${shortcut}"? ${keyMatch}, input.type="${input.type}" === "keyDown"? ${typeMatch}`);
+    if (keyMatch && typeMatch) {
+      console.warn("[main] MATCH! Calling executeCommand(toggle-toc)");
       executeCommand("toggle-toc");
     }
   });
