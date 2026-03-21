@@ -1,4 +1,4 @@
-import { Then, When } from "@cucumber/cucumber";
+import { Then, When, Given } from "@cucumber/cucumber";
 import { expect } from "expect-webdriverio";
 import type { E2EWorld } from "../support/world.ts";
 
@@ -58,24 +58,44 @@ async function clickTocMenuItem(browser: WebdriverIO.Browser): Promise<void> {
   });
 }
 
-Then("the table of contents sidebar is hidden", async function (this: E2EWorld) {
-  const browser = this.getBrowser();
-  const sidebar = await browser.$('[data-testid="toc-sidebar"]');
-  const isDisplayed = await sidebar.isDisplayed().catch(() => false);
-  expect(isDisplayed).toBe(false);
-});
-
-Then("the table of contents sidebar is visible", async function (this: E2EWorld) {
-  const browser = this.getBrowser();
+async function ensureSidebarVisible(browser: WebdriverIO.Browser): Promise<void> {
   const sidebar = await browser.$('[data-testid="toc-sidebar"]');
   const isDisplayed = await sidebar.isDisplayed().catch(() => false);
 
   if (!isDisplayed) {
     await clickTocMenuItem(browser);
   }
+}
 
-  const isDisplayedAfterSetup = await sidebar.isDisplayed().catch(() => false);
-  expect(isDisplayedAfterSetup).toBe(true);
+async function ensureSidebarHidden(browser: WebdriverIO.Browser): Promise<void> {
+  const sidebar = await browser.$('[data-testid="toc-sidebar"]');
+  const isDisplayed = await sidebar.isDisplayed().catch(() => false);
+
+  if (isDisplayed) {
+    await clickTocMenuItem(browser);
+  }
+}
+
+Then("the table of contents sidebar should be {word}", async function (this: E2EWorld, state: string) {
+  const browser = this.getBrowser();
+  const sidebar = await browser.$('[data-testid="toc-sidebar"]');
+  const isDisplayed = await sidebar.isDisplayed().catch(() => false);
+  
+  if (state === "visible") {
+    expect(isDisplayed).toBe(true);
+  } else if (state === "hidden") {
+    expect(isDisplayed).toBe(false);
+  }
+});
+
+Given("the table of contents sidebar is {word}", async function (this: E2EWorld, state: string) {
+  const browser = this.getBrowser();
+  
+  if (state === "visible") {
+    await ensureSidebarVisible(browser);
+  } else if (state === "hidden") {
+    await ensureSidebarHidden(browser);
+  }
 });
 
 When("the user clicks the title bar table of contents toggle button", async function (this: E2EWorld) {
