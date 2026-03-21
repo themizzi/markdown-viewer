@@ -2,73 +2,13 @@ import type { MermaidApi, ViewerApi } from "./contracts";
 import { HtmlRenderer } from "./htmlRenderer";
 import { MermaidRenderer } from "./mermaidRenderer";
 
-/**
- * Bootstrap application renderer with HTML and Mermaid support.
- */
-export class AppBootstrap {
-  private readonly viewerApi: ViewerApi;
-  private readonly htmlRenderer: HtmlRenderer;
-  private readonly documentBase: HTMLBaseElement;
-  private readonly tocToggleButton: HTMLButtonElement;
-  private readonly tocSidebar: HTMLElement;
-
-  constructor(
-    viewerApi: ViewerApi,
-    htmlRenderer: HtmlRenderer,
-    documentBase: HTMLBaseElement,
-    tocToggleButton: HTMLButtonElement,
-    tocSidebar: HTMLElement
-  ) {
-    this.viewerApi = viewerApi;
-    this.htmlRenderer = htmlRenderer;
-    this.documentBase = documentBase;
-    this.tocToggleButton = tocToggleButton;
-    this.tocSidebar = tocSidebar;
-  }
-
-  async start(): Promise<void> {
-    // Initialize sidebar visibility
-    await this.initSidebar();
-
-    // Render initial document
-    const initialDocument = await this.viewerApi.getHtml();
-    await this.renderDocument(initialDocument);
-
-    // Subscribe to updates
-    this.viewerApi.onHtmlUpdated((nextDocument) => {
-      void this.renderDocument(nextDocument);
-    });
-  }
-
-  private async renderDocument(document: { html: string; baseHref: string }): Promise<void> {
-    this.documentBase.href = document.baseHref;
-    await this.htmlRenderer.render(document.html);
-  }
-
-  private applySidebarVisibility(visible: boolean): void {
-    this.tocSidebar.hidden = !visible;
-    this.tocToggleButton.setAttribute("aria-pressed", visible ? "true" : "false");
-  }
-
-  private async initSidebar(): Promise<void> {
-    const initialVisibility = await this.viewerApi.sidebar.getInitialVisibility();
-    this.applySidebarVisibility(initialVisibility);
-
-    this.tocToggleButton.addEventListener("click", () => {
-      void this.viewerApi.sidebar.requestToggleSidebar();
-    });
-
-    this.viewerApi.sidebar.onVisibilityChanged((visible) => {
-      this.applySidebarVisibility(visible);
-    });
-  }
+interface DomElements {
+  baseHrefElement: HTMLBaseElement;
+  tocToggleButton: HTMLButtonElement;
+  tocSidebar: HTMLElement;
 }
 
-/**
- * Create a bootstrapped app instance with renderers.
- */
-export function createApp(viewerApi: ViewerApi, mermaid: MermaidApi): AppBootstrap {
-  // Validate required DOM elements
+function queryDomElements(): DomElements {
   const root = document.getElementById("app");
   if (!root) {
     throw new Error("Missing #app element");
@@ -84,18 +24,76 @@ export function createApp(viewerApi: ViewerApi, mermaid: MermaidApi): AppBootstr
     throw new Error("Missing table of contents sidebar");
   }
 
-  const documentBase = document.getElementById("document-base");
-  if (!(documentBase instanceof HTMLBaseElement)) {
+  const baseHrefElement = document.getElementById("document-base");
+  if (!(baseHrefElement instanceof HTMLBaseElement)) {
     throw new Error("Missing document base element");
   }
 
-  // Initialize mermaid renderer
+  return { baseHrefElement, tocToggleButton, tocSidebar };
+}
+
+export class AppBootstrap {
+  private readonly viewerApi: ViewerApi;
+  private readonly htmlRenderer: HtmlRenderer;
+  private readonly baseHrefElement: HTMLBaseElement;
+  private readonly tocToggleButton: HTMLButtonElement;
+  private readonly tocSidebar: HTMLElement;
+
+  constructor(
+    viewerApi: ViewerApi,
+    htmlRenderer: HtmlRenderer,
+    baseHrefElement: HTMLBaseElement,
+    tocToggleButton: HTMLButtonElement,
+    tocSidebar: HTMLElement
+  ) {
+    this.viewerApi = viewerApi;
+    this.htmlRenderer = htmlRenderer;
+    this.baseHrefElement = baseHrefElement;
+    this.tocToggleButton = tocToggleButton;
+    this.tocSidebar = tocSidebar;
+  }
+
+  async start(): Promise<void> {
+    await this.initSidebar();
+    const initialDocument = await this.viewerApi.getHtml();
+    await this.renderDocument(initialDocument);
+    this.viewerApi.onHtmlUpdated((nextDocument) => {
+      void this.renderDocument(nextDocument);
+    });
+  }
+
+  private async renderDocument(document: { html: string; baseHref: string }): Promise<void> {
+    this.baseHrefElement.href = document.baseHref;
+    await this.htmlRenderer.render(document.html);
+  }
+
+  private applySidebarVisibility(visible: boolean): void {
+    this.tocSidebar.hidden = !visible;
+    this.tocToggleButton.setAttribute("aria-pressed", visible ? "true" : "false");
+  }
+
+  private async initSidebar(): Promise<void> {
+    const initialVisibility = await this.viewerApi.sidebar.getInitialVisibility();
+    this.applySidebarVisibility(initialVisibility);
+
+    const handleToggleClick = () => {
+      void this.viewerApi.sidebar.requestToggleSidebar();
+    };
+    this.tocToggleButton.addEventListener("click", handleToggleClick);
+
+    this.viewerApi.sidebar.onVisibilityChanged((visible) => {
+      this.applySidebarVisibility(visible);
+    });
+  }
+}
+
+export function createApp(viewerApi: ViewerApi, mermaid: MermaidApi): AppBootstrap {
+  const { baseHrefElement, tocToggleButton, tocSidebar } = queryDomElements();
+
   const mermaidRenderer = new MermaidRenderer(mermaid);
   mermaidRenderer.initialize();
 
-  // Create HTML renderer with mermaid support
   const htmlRenderer = new HtmlRenderer("app", [mermaidRenderer]);
 
-  // Create bootstrap instance with all required elements
-  return new AppBootstrap(viewerApi, htmlRenderer, documentBase, tocToggleButton, tocSidebar);
+  return new AppBootstrap(viewerApi, htmlRenderer, baseHrefElement, tocToggleButton, tocSidebar);
 }
