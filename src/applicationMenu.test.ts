@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { createApplicationMenu } from "./applicationMenu";
+import { COMMANDS } from "./commands";
 
 vi.mock("electron", () => ({
   app: {
@@ -17,6 +18,7 @@ interface FakeMenuItem {
   click?: () => void;
   type?: string;
   checked?: boolean;
+  accelerator?: string;
 }
 
 interface TemplateItem {
@@ -26,6 +28,7 @@ interface TemplateItem {
   click?: () => void;
   type?: string;
   checked?: boolean;
+  accelerator?: string;
 }
 
 interface FakeMenu {
@@ -42,7 +45,8 @@ function buildFakeMenu(template: unknown[]): FakeMenu {
         id: t.id,
         click: t.click,
         type: t.type,
-        checked: t.checked
+        checked: t.checked,
+        accelerator: t.accelerator
       };
     })
   };
@@ -147,5 +151,17 @@ describe("applicationMenu", () => {
     tocItem?.click?.();
 
     expect(onToggleTocCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it("Show Table of Contents item has F6 accelerator", () => {
+    const template = createApplicationMenu() as unknown as unknown[];
+    const menu = buildFakeMenu(template);
+
+    const viewMenu = menu.items.find((item) => item.label === "View");
+    const tocItem = viewMenu?.submenu?.find(
+      (item) => item.label === "Show Table of Contents"
+    ) as unknown as { accelerator?: string };
+
+    expect(tocItem?.accelerator).toBe(COMMANDS.toggleToc.shortcut);
   });
 });

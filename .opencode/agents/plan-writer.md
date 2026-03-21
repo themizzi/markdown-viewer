@@ -1,7 +1,6 @@
 ---
 description: Creates repo-style implementation plans and writes them only in plans/.
 mode: all
-model: openai/gpt-5.4
 temperature: 0.1
 permission:
   bash: deny
