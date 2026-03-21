@@ -5,50 +5,46 @@ Feature: Table of contents sidebar visibility
     Then the table of contents sidebar should be hidden
     And the View menu item for table of contents is unchecked
 
-  Scenario: Clicking the toolbar button when the sidebar is hidden shows the sidebar
+  Scenario Outline: Toggling the sidebar visibility with the toolbar button
     Given the app is showing the initial test markdown document
-    And the table of contents sidebar is hidden
+    And the table of contents sidebar is <initial_visibility>
     When the user clicks the title bar table of contents toggle button
-    Then the table of contents sidebar should be visible
+    Then the table of contents sidebar should be <final_visibility>
 
-  Scenario: Clicking the toolbar button when the sidebar is visible hides the sidebar
+    Examples:
+      | initial_visibility | final_visibility |
+      | hidden             | visible          |
+      | visible            | hidden           |
+
+  Scenario Outline: Toggling the sidebar visibility with the View menu
     Given the app is showing the initial test markdown document
-    And the table of contents sidebar is visible
+    And the table of contents sidebar is <initial_visibility>
+    When the user chooses View Show Table of Contents
+    Then the table of contents sidebar should be <final_visibility>
+
+    Examples:
+      | initial_visibility | final_visibility |
+      | hidden             | visible          |
+      | visible            | hidden           |
+
+  Scenario Outline: Toolbar button toggle updates the View menu checked state
+    Given the app is showing the initial test markdown document
+    And the table of contents sidebar is <initial_visibility>
     When the user clicks the title bar table of contents toggle button
-    Then the table of contents sidebar should be hidden
+    Then the View menu item for table of contents is <final_menu_state>
 
-  Scenario: Clicking the View menu item when the sidebar is hidden shows the sidebar
+    Examples:
+      | initial_visibility | final_menu_state |
+      | hidden             | checked          |
+      | visible            | unchecked        |
+
+  Scenario Outline: View menu toggle reflects in the View menu checked state
     Given the app is showing the initial test markdown document
-    And the table of contents sidebar is hidden
+    And the table of contents sidebar is <initial_visibility>
     When the user chooses View Show Table of Contents
-    Then the table of contents sidebar should be visible
+    Then the View menu item for table of contents is <final_menu_state>
 
-  Scenario: Clicking the View menu item when the sidebar is visible hides the sidebar
-    Given the app is showing the initial test markdown document
-    And the table of contents sidebar is visible
-    When the user chooses View Show Table of Contents
-    Then the table of contents sidebar should be hidden
-
-  Scenario: Clicking the toolbar button when the sidebar is hidden checks the View menu item
-    Given the app is showing the initial test markdown document
-    And the table of contents sidebar is hidden
-    When the user clicks the title bar table of contents toggle button
-    Then the View menu item for table of contents is checked
-
-  Scenario: Clicking the toolbar button when the sidebar is visible unchecks the View menu item
-    Given the app is showing the initial test markdown document
-    And the table of contents sidebar is visible
-    When the user clicks the title bar table of contents toggle button
-    Then the View menu item for table of contents is unchecked
-
-  Scenario: Clicking the View menu item when the sidebar is hidden leaves the View menu item checked
-    Given the app is showing the initial test markdown document
-    And the table of contents sidebar is hidden
-    When the user chooses View Show Table of Contents
-    Then the View menu item for table of contents is checked
-
-  Scenario: Clicking the View menu item when the sidebar is visible leaves the View menu item unchecked
-    Given the app is showing the initial test markdown document
-    And the table of contents sidebar is visible
-    When the user chooses View Show Table of Contents
-    Then the View menu item for table of contents is unchecked
+    Examples:
+      | initial_visibility | final_menu_state |
+      | hidden             | checked          |
+      | visible            | unchecked        |
