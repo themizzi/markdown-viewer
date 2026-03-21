@@ -11,10 +11,6 @@ export function setMainWindow(window: BrowserWindow | null): void {
   mainWindow = window;
 }
 
-/**
- * Updates the "View > Table of Contents" menu item's checked state
- * Single source of truth for TOC menu synchronization
- */
 function setTocMenuChecked(visible: boolean): void {
   const appMenu = Menu.getApplicationMenu();
   if (!appMenu) return;
@@ -30,10 +26,7 @@ function setTocMenuChecked(visible: boolean): void {
   }
 }
 
-export async function initializeSidebarIntegration(): Promise<SidebarVisibility> {
-  const visibility = new SidebarVisibilityImpl();
-
-  // Register IPC main handlers
+function registerSidebarIpcHandlers(visibility: SidebarVisibilityImpl): void {
   ipcMain.handle(IPC_SIDEBAR_GET_INITIAL_VISIBILITY, async () => {
     return visibility.getCurrentVisibility();
   });
@@ -41,17 +34,23 @@ export async function initializeSidebarIntegration(): Promise<SidebarVisibility>
   ipcMain.handle(IPC_SIDEBAR_REQUEST_TOGGLE, async () => {
     visibility.toggle();
   });
+}
 
-  // Subscribe to visibility changes and update menu + send to renderer
+function subscribeToVisibilityChanges(visibility: SidebarVisibilityImpl): void {
   visibility.onVisibilityChange((visible: boolean) => {
-    // Update the menu item checked state
     setTocMenuChecked(visible);
 
-    // Notify the renderer
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send(IPC_SIDEBAR_VISIBILITY_CHANGED, visible);
     }
   });
+}
+
+export async function initializeSidebarIntegration(): Promise<SidebarVisibility> {
+  const visibility = new SidebarVisibilityImpl();
+
+  registerSidebarIpcHandlers(visibility);
+  subscribeToVisibilityChanges(visibility);
 
   return visibility;
 }
