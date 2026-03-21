@@ -78,11 +78,17 @@ body {
   background: transparent;
   border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 16px;
   color: var(--color-text);
   transition: background-color var(--transition-fast);
   -webkit-app-region: no-drag;
-  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .toc-toggle-button:hover {
