@@ -208,32 +208,36 @@ Then("the tooltip should contain {string}", async function (this: E2EWorld, text
 
 When("the user presses F6", async function (this: E2EWorld) {
   const browser = this.getBrowser();
-  const logs: string[] = [];
   
-  // Capture console logs from Electron
-  browser.on("console", (msg) => {
-    const text = msg.text();
-    logs.push(text);
-    console.warn(`[Electron] ${text}`);
-  });
-  
-  await browser.electron.execute(async (electron) => {
+  const result = await browser.electron.execute(async (electron) => {
     const windows = electron.BrowserWindow.getAllWindows();
     if (windows.length > 0) {
       const win = windows[0];
-      console.warn("[E2E] Sending keyDown F6");
+      let receivedEvent = false;
+      
+      // Add a one-time listener to check if before-input-event fires
+      const handler = (event: unknown, input: { key: string; type: string }) => {
+        receivedEvent = true;
+        console.log(`[MAIN] before-input-event received: key="${input.key}" type="${input.type}"`);
+      };
+      win.webContents.on("before-input-event", handler);
+      
+      // Send the key
       win.webContents.sendInputEvent({
         type: "keyDown",
         keyCode: "F6"
       });
-      console.warn("[E2E] Sent keyDown F6");
+      
+      // Wait for event to process
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      // Remove handler
+      win.webContents.removeListener("before-input-event", handler);
+      
+      return { receivedEvent, windowCount: windows.length };
     }
+    return { receivedEvent: false, windowCount: 0 };
   });
   
-  // Wait a moment for logs to appear
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  
-  // Log what we captured
-  console.warn(`[E2E] Captured ${logs.length} log entries from Electron`);
-  logs.forEach((log) => console.warn(`[E2E-Log] ${log}`));
+  console.warn(`[E2E] Result: receivedEvent=${result.receivedEvent}, windowCount=${result.windowCount}`);
 });
