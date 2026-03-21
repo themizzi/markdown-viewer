@@ -100,22 +100,22 @@ export async function dismissMacOpenDialog(): Promise<void> {
   try {
     await verifyMacOpenDialogPresent(10000);
 
-    const script = `
-      tell application "System Events"
-        tell process "markdown-viewer"
-          set frontmost to true
-          tell window "Open"
-            key code 53
+    // Try multiple times to dismiss the dialog
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const script = `
+        tell application "System Events"
+          tell process "markdown-viewer"
+            set frontmost to true
+            tell window "Open"
+              key code 53
+            end tell
           end tell
         end tell
-      end tell
-    `;
+      `;
 
-    runAppleScript(script);
+      runAppleScript(script);
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const startTime = Date.now();
-    while (Date.now() - startTime < 5000) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
       if (!isMacOpenDialogPresent()) {
         return;
       }
