@@ -210,34 +210,39 @@ When("the user presses F6", async function (this: E2EWorld) {
   const browser = this.getBrowser();
   
   const result = await browser.electron.execute(async (electron) => {
-    const windows = electron.BrowserWindow.getAllWindows();
-    if (windows.length > 0) {
-      const win = windows[0];
-      let eventDetails: { key: string; type: string; keyCode: string } | null = null;
-      
-      // Add a one-time listener to capture the event details
-      const handler = (event: unknown, input: { key: string; type: string; keyCode: string }) => {
-        eventDetails = { key: input.key, type: input.type, keyCode: input.keyCode };
-        console.log(`[MAIN] before-input-event: key="${input.key}" type="${input.type}" keyCode="${input.keyCode}"`);
-      };
-      win.webContents.on("before-input-event", handler);
-      
-      // Send the key
-      win.webContents.sendInputEvent({
-        type: "keyDown",
-        keyCode: "F6"
-      });
-      
-      // Wait for event to process
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      // Remove handler
-      win.webContents.removeListener("before-input-event", handler);
-      
-      return { eventDetails, windowCount: windows.length };
-    }
-    return { eventDetails: null, windowCount: 0 };
+    const allWindows = electron.BrowserWindow.getAllWindows();
+    const windowInfos = allWindows.map((win) => ({
+      id: win.id,
+      isVisible: win.isVisible(),
+      isFocused: win.isFocused(),
+      title: win.getTitle()
+    }));
+    
+    console.warn(`[E2E] All windows: ${JSON.stringify(windowInfos)}`);
+    
+    // Send to the visible/focused window
+    const targetWin = allWindows.find((w) => w.isVisible()) || allWindows[0];
+    console.warn(`[E2E] Sending to window id: ${targetWin.id}, isVisible: ${targetWin.isVisible()}`);
+    
+    let eventDetails: { key: string; type: string } | null = null;
+    
+    const handler = (event: unknown, input: { key: string; type: string }) => {
+      eventDetails = { key: input.key, type: input.type };
+      console.warn(`[E2E-Window-${targetWin.id}] before-input-event: key="${input.key}" type="${input.type}"`);
+    };
+    targetWin.webContents.on("before-input-event", handler);
+    
+    targetWin.webContents.sendInputEvent({
+      type: "keyDown",
+      keyCode: "F6"
+    });
+    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    
+    targetWin.webContents.removeListener("before-input-event", handler);
+    
+    return { eventDetails, windowCount: allWindows.length, targetWindowId: targetWin.id };
   });
   
-  console.warn(`[E2E] Event details: ${JSON.stringify(result.eventDetails)}, windowCount=${result.windowCount}`);
+  console.warn(`[E2E] Result: ${JSON.stringify(result)}`);
 });
