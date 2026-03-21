@@ -19,6 +19,7 @@ import type { SidebarVisibility } from "./sidebarVisibility";
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
 const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
+const IPC_TOGGLE_TOC = "viewer:toggle-toc";  // For triggering TOC toggle
 
 let mainWindow: BrowserWindow | null = null;
 let automationWindow: BrowserWindow | null = null;
@@ -26,12 +27,9 @@ let controller: ViewerController | null = null;
 let sidebarVisibility: SidebarVisibility | undefined = undefined;
 
 function executeCommand(command: string): void {
-  console.warn(`[executeCommand] Called with: ${command}`);
   switch (command) {
     case "toggle-toc":
-      console.warn(`[executeCommand] sidebarVisibility is: ${sidebarVisibility}`);
       sidebarVisibility?.toggle();
-      console.warn(`[executeCommand] Called toggle() on sidebarVisibility`);
       break;
     case "open-file":
       void handleOpenRequest().catch((error) => {
@@ -45,16 +43,9 @@ function installBeforeInputEventHandler(window: BrowserWindow): void {
   interface Input {
     type: string;
     key: string;
-    code: string;
   }
   window.webContents.on("before-input-event", (_event, input: Input) => {
-    console.warn(`[main] before-input-event: key="${input.key}" type="${input.type}"`);
-    const shortcut = COMMANDS.toggleToc.shortcut;
-    const keyMatch = input.key === shortcut;
-    const typeMatch = input.type === "keyDown";
-    console.warn(`[main] Comparing: input.key="${input.key}" === "${shortcut}"? ${keyMatch}, input.type="${input.type}" === "keyDown"? ${typeMatch}`);
-    if (keyMatch && typeMatch) {
-      console.warn("[main] MATCH! Calling executeCommand(toggle-toc)");
+    if (input.key === COMMANDS.toggleToc.shortcut && input.type === "keyDown") {
       executeCommand("toggle-toc");
     }
   });
@@ -202,6 +193,11 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
     html: "<p>Loading...</p>",
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  });
+
+  ipcMain.handle(IPC_TOGGLE_TOC, async () => {
+    executeCommand("toggle-toc");
+    return { success: true };
   });
 
   if (!app.isPackaged) {
