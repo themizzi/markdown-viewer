@@ -1,5 +1,5 @@
 import { ipcMain, Menu, BrowserWindow } from "electron";
-import { SidebarVisibilityImpl, SidebarVisibility } from "./sidebarVisibility";
+import { SidebarVisibility } from "./sidebarVisibility";
 
 const IPC_SIDEBAR_GET_INITIAL_VISIBILITY = "sidebar:get-initial-visibility";
 const IPC_SIDEBAR_REQUEST_TOGGLE = "sidebar:request-toggle";
@@ -26,7 +26,7 @@ function setTocMenuChecked(visible: boolean): void {
   }
 }
 
-function registerSidebarIpcHandlers(visibility: SidebarVisibilityImpl): void {
+function registerSidebarIpcHandlers(visibility: SidebarVisibility): void {
   ipcMain.handle(IPC_SIDEBAR_GET_INITIAL_VISIBILITY, async () => {
     return visibility.getCurrentVisibility();
   });
@@ -36,7 +36,7 @@ function registerSidebarIpcHandlers(visibility: SidebarVisibilityImpl): void {
   });
 }
 
-function subscribeToVisibilityChanges(visibility: SidebarVisibilityImpl): void {
+function subscribeToVisibilityChanges(visibility: SidebarVisibility): void {
   visibility.onVisibilityChange((visible: boolean) => {
     setTocMenuChecked(visible);
 
@@ -47,7 +47,7 @@ function subscribeToVisibilityChanges(visibility: SidebarVisibilityImpl): void {
 }
 
 export async function initializeSidebarIntegration(): Promise<SidebarVisibility> {
-  const visibility = new SidebarVisibilityImpl();
+  const visibility = new SidebarVisibility();
 
   registerSidebarIpcHandlers(visibility);
   subscribeToVisibilityChanges(visibility);

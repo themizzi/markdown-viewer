@@ -1,13 +1,6 @@
 export type VisibilityChangeHandler = (visible: boolean) => void;
 
-export interface SidebarVisibility {
-  toggle(): void;
-  setVisible(visible: boolean): void;
-  getCurrentVisibility(): boolean;
-  onVisibilityChange(handler: VisibilityChangeHandler): void;
-}
-
-export class SidebarVisibilityImpl implements SidebarVisibility {
+export class SidebarVisibility {
   private visible: boolean = false;
   private changeHandlers: VisibilityChangeHandler[] = [];
 

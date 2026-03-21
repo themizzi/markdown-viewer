@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { SidebarVisibilityImpl } from "./sidebarVisibility";
-import type { SidebarVisibility } from "./sidebarVisibility";
+import { SidebarVisibility } from "./sidebarVisibility";
 
 describe("SidebarVisibility", () => {
   let visibility: SidebarVisibility;
 
   beforeEach(() => {
-    visibility = new SidebarVisibilityImpl();
+    visibility = new SidebarVisibility();
   });
 
   it("sidebar starts hidden", () => {
