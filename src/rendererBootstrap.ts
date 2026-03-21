@@ -9,8 +9,7 @@ interface DomElements {
 }
 
 function queryDomElements(): DomElements {
-  const root = document.getElementById("app");
-  if (!root) {
+  if (!document.getElementById("app")) {
     throw new Error("Missing #app element");
   }
 
