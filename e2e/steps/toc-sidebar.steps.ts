@@ -168,20 +168,13 @@ Given("the app is showing the {string} markdown document", async function (this:
 Then("the table of contents should contain {string}", async function (this: E2EWorld, text: string) {
   const browser = this.getBrowser();
   const sidebar = await browser.$('[data-testid="toc-sidebar"]');
-  console.log("Looking for TOC link with text:", text);
-  const sidebarHtml = await sidebar.getHTML();
-  console.log("Full Sidebar HTML:", sidebarHtml);
   const link = await sidebar.$(`a=${text}`);
-  console.log("Found link:", await link.isExisting());
   await expect(link).toBeExisting();
 });
 
 When("the user clicks the TOC link for {string}", async function (this: E2EWorld, text: string) {
   const browser = this.getBrowser();
   const sidebar = await browser.$('[data-testid="toc-sidebar"]');
-  console.log("Clicking TOC link with text:", text);
-  const sidebarHtml = await sidebar.getHTML();
-  console.log("Sidebar HTML:", sidebarHtml.substring(0, 500));
   const link = await sidebar.$(`a=${text}`);
   await link.click();
 });
