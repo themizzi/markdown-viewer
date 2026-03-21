@@ -1,7 +1,6 @@
 ---
 description: Reviews execution plans for readiness, missing context, and open questions before implementation starts.
 mode: all
-model: openai/gpt-5.3-codex
 temperature: 0.1
 permission:
   bash: deny
