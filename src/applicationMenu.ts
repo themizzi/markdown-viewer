@@ -1,6 +1,31 @@
 import { Menu, MenuItemConstructorOptions, app, shell } from "electron";
 
-export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
+function createViewSubmenu(onToggleToc: () => void): MenuItemConstructorOptions[] {
+  return [
+    { role: "reload" as const },
+    { role: "forceReload" as const },
+    { role: "toggleDevTools" as const },
+    { type: "separator" as const },
+    { role: "resetZoom" as const },
+    { role: "zoomIn" as const },
+    { role: "zoomOut" as const },
+    { type: "separator" as const },
+    { role: "togglefullscreen" as const },
+    { type: "separator" as const },
+    {
+      label: "Show Table of Contents",
+      id: "view-toggle-table-of-contents",
+      type: "checkbox" as const,
+      checked: false,
+      click: onToggleToc
+    }
+  ];
+}
+
+export function createApplicationMenu(
+  onOpen: () => void = () => {},
+  onToggleToc: () => void = () => {}
+): Menu {
   const isMac = process.platform === "darwin";
 
   const template: MenuItemConstructorOptions[] = isMac
@@ -45,17 +70,7 @@ export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
         },
         {
           label: "View",
-          submenu: [
-            { role: "reload" as const },
-            { role: "forceReload" as const },
-            { role: "toggleDevTools" as const },
-            { type: "separator" as const },
-            { role: "resetZoom" as const },
-            { role: "zoomIn" as const },
-            { role: "zoomOut" as const },
-            { type: "separator" as const },
-            { role: "togglefullscreen" as const }
-          ]
+          submenu: createViewSubmenu(onToggleToc)
         },
         {
           label: "Window",
@@ -105,17 +120,7 @@ export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
         },
         {
           label: "View",
-          submenu: [
-            { role: "reload" as const },
-            { role: "forceReload" as const },
-            { role: "toggleDevTools" as const },
-            { type: "separator" as const },
-            { role: "resetZoom" as const },
-            { role: "zoomIn" as const },
-            { role: "zoomOut" as const },
-            { type: "separator" as const },
-            { role: "togglefullscreen" as const }
-          ]
+          submenu: createViewSubmenu(onToggleToc)
         }
       ];
 

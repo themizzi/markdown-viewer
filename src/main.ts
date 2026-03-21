@@ -12,6 +12,8 @@ import { createApplicationMenu } from "./applicationMenu";
 import { showOpenFileDialog } from "./openFileDialog";
 import { openFileFlow } from "./openFileFlow";
 import { resolveStartupFile } from "./startupOpenBehavior";
+import { initializeSidebarIntegration, setMainWindow } from "./sidebarIntegration";
+import type { SidebarVisibility } from "./sidebarVisibility";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
@@ -20,6 +22,7 @@ const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
 let mainWindow: BrowserWindow | null = null;
 let automationWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
+let sidebarVisibility: SidebarVisibility | undefined = undefined;
 
 function configureViewerWindow(window: BrowserWindow): void {
   window.setSize(1000, 760);
@@ -73,12 +76,16 @@ async function handleOpenRequest(): Promise<void> {
 }
 
 function installApplicationMenu(): void {
-  
-  const menu = createApplicationMenu(() => {
-    void handleOpenRequest().catch((error) => {
-      console.error("Failed to open file:", error);
-    });
-  });
+  const menu = createApplicationMenu(
+    () => {
+      void handleOpenRequest().catch((error) => {
+        console.error("Failed to open file:", error);
+      });
+    },
+    () => {
+      sidebarVisibility?.toggle();
+    }
+  );
 
   Menu.setApplicationMenu(menu);
 }
@@ -87,6 +94,7 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1000,
     height: 760,
+    titleBarStyle: "hiddenInset",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -112,6 +120,7 @@ function createAutomationWindow(): BrowserWindow {
     width: 1,
     height: 1,
     show: false,
+    titleBarStyle: "hiddenInset",
     focusable: true,
     skipTaskbar: true,
     webPreferences: {
@@ -134,10 +143,12 @@ function ensureViewerWindow(): BrowserWindow {
     mainWindow = automationWindow;
     automationWindow = null;
     configureViewerWindow(mainWindow);
+    setMainWindow(mainWindow);
     return mainWindow;
   }
 
   mainWindow = createWindow();
+  setMainWindow(mainWindow);
   return mainWindow;
 }
 
@@ -181,6 +192,9 @@ function registerActivateHandler(): void {
 
 app.whenReady().then(async () => {
   const args = process.argv.slice(2);
+
+  // Initialize sidebar integration (will create IPC handlers and menu sync)
+  sidebarVisibility = await initializeSidebarIntegration();
 
   installApplicationMenu();
   registerIpcHandlers();
