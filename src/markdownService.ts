@@ -72,7 +72,7 @@ export class MarkedMarkdownService implements MarkdownRenderer {
       }
     }
 
-    const html = this.marked.parse(markdown) as string;
+    const html = this.marked.parser(tokens) as string;
     return { html, toc: toc.length > 0 ? toc : undefined };
   }
 }

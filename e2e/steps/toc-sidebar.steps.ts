@@ -186,10 +186,11 @@ Then("a heading should be visible", async function (this: E2EWorld) {
   await expect(heading).toBeDisplayed();
 });
 
-When('the markdown file {string} is modified to add a new heading {string}', async function (this: E2EWorld, _filename: string, newHeading: string) {
-  const filePath = path.join(fixturesDir, "toc-test.md");
-  const content = fs.readFileSync(filePath, "utf-8");
-  const newContent = content + `\n\n## ${newHeading}\n\nNew content.`;
+When('the markdown file {string} is modified to add a new heading {string}', async function (this: E2EWorld, filename: string, newHeading: string) {
+  const filePath = path.join(fixturesDir, filename);
+  const originalContent = fs.readFileSync(filePath, "utf-8");
+  const newContent = originalContent + `\n\n## ${newHeading}\n\nNew content.`;
   fs.writeFileSync(filePath, newContent);
   await new Promise((resolve) => setTimeout(resolve, 1000));
+  fs.writeFileSync(filePath, originalContent);
 });

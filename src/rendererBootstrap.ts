@@ -91,6 +91,8 @@ export class AppBootstrap {
 
     if (document.toc) {
       this.renderToc(document.toc);
+    } else {
+      this.clearToc();
     }
   }
 
@@ -126,6 +128,10 @@ export class AppBootstrap {
         }
       });
     });
+  }
+
+  private clearToc(): void {
+    this.tocSidebar.innerHTML = '<p class="sidebar-empty">No table of contents available.</p>';
   }
 
   private applySidebarVisibility(visible: boolean): void {

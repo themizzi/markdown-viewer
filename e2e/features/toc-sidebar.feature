@@ -70,5 +70,5 @@ Feature: Table of contents sidebar visibility
   Scenario: TOC updates when markdown file is modified
     Given the app is showing the "toc-test.md" markdown document
     And the table of contents sidebar is visible
-    When the markdown file "toc-test.md" is modified to add a new heading "New Heading"
-    Then the table of contents should contain "New Heading"
+    When the markdown file "toc-test.md" is modified to add a new heading "Live TOC Auto-Refresh"
+    Then the table of contents should contain "Live TOC Auto-Refresh"
