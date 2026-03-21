@@ -53,8 +53,10 @@ export class ViewerController {
 
   private async refresh(): Promise<void> {
     const markdown = await this.fileReader.read(this.filePath);
+    const { html, toc } = this.markdownRenderer.render(markdown);
     this.latestDocument = {
-      html: this.markdownRenderer.render(markdown),
+      html,
+      toc,
       baseHref: pathToFileURL(`${path.dirname(this.filePath)}${path.sep}`).href,
     };
     this.publishDocument(this.latestDocument);

@@ -1,6 +1,9 @@
 import { execSync } from 'node:child_process';
+import * as path from 'node:path';
 
 const MAC_OPEN_DIALOG = 'MAC_OPEN_DIALOG:';
+
+const fixturesDir = path.resolve(process.cwd(), 'e2e/fixtures');
 
 function runAppleScript(script: string): string {
   return execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, {
@@ -97,22 +100,22 @@ export async function dismissMacOpenDialog(): Promise<void> {
   try {
     await verifyMacOpenDialogPresent(10000);
 
-    const script = `
-      tell application "System Events"
-        tell process "markdown-viewer"
-          set frontmost to true
-          tell window "Open"
-            key code 53
+    // Try multiple times to dismiss the dialog
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const script = `
+        tell application "System Events"
+          tell process "markdown-viewer"
+            set frontmost to true
+            tell window "Open"
+              key code 53
+            end tell
           end tell
         end tell
-      end tell
-    `;
+      `;
 
-    runAppleScript(script);
+      runAppleScript(script);
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const startTime = Date.now();
-    while (Date.now() - startTime < 5000) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
       if (!isMacOpenDialogPresent()) {
         return;
       }
@@ -130,5 +133,64 @@ export async function dismissMacOpenDialog(): Promise<void> {
       wrapped.cause = error;
     }
     throw wrapped;
+  }
+}
+
+export async function openFileViaDialog(fileName: string): Promise<void> {
+  // First ensure the app is running via WebDriver
+  // Then use AppleScript to interact with the file dialog
+  
+  const script = `
+    tell application "System Events"
+      tell process "markdown-viewer"
+        set frontmost to true
+        delay 0.5
+        
+        -- Trigger Cmd+O to open File > Open
+        keystroke "o" using command down
+        delay 1.5
+        
+        -- Wait for Open dialog
+        repeat 15 times
+          try
+            if (exists window 1) then
+              exit repeat
+            end if
+          end try
+          delay 0.3
+        end repeat
+        
+        -- Use Go to Folder (Cmd+Shift+G)
+        keystroke "g" using {command down, shift down}
+        delay 0.5
+        
+        -- Type the full path to the folder
+        keystroke "${fixturesDir}"
+        delay 0.3
+        key code 36 -- Return
+        delay 1.5
+        
+        -- Type filename
+        keystroke "${fileName}"
+        delay 0.3
+        key code 36 -- Return
+        delay 0.5
+        
+        -- Press Return again to confirm if needed
+        key code 36
+      end tell
+    end tell
+  `;
+  
+  try {
+    runAppleScript(script);
+    // Wait for file to load in the app
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  } catch (error) {
+    const err = new Error(
+      `${MAC_OPEN_DIALOG} Failed to open file via dialog: ${error instanceof Error ? error.message : String(error)}`
+    );
+    (err as { cause?: unknown }).cause = error;
+    throw err;
   }
 }

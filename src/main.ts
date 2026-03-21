@@ -104,6 +104,7 @@ function installApplicationMenu(): void {
 }
 
 function createWindow(): BrowserWindow {
+  const isDev = !app.isPackaged && Boolean(process.env.ELECTRON_RENDERER_URL);
   const window = new BrowserWindow({
     width: 1000,
     height: 760,
@@ -111,7 +112,8 @@ function createWindow(): BrowserWindow {
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      webSecurity: !isDev
     }
   });
 

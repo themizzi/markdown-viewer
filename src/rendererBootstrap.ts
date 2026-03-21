@@ -1,4 +1,4 @@
-import type { MermaidApi, ViewerApi } from "./contracts";
+import type { MermaidApi, RenderedDocument, TableOfContentsItem, ViewerApi } from "./contracts";
 import { HtmlRenderer } from "./htmlRenderer";
 import { MermaidRenderer } from "./mermaidRenderer";
 
@@ -69,9 +69,69 @@ export class AppBootstrap {
     }
   }
 
-  private async renderDocument(document: { html: string; baseHref: string }): Promise<void> {
+  private async renderDocument(document: RenderedDocument): Promise<void> {
+    const originalBaseHref = this.baseHrefElement.href;
     this.baseHrefElement.href = document.baseHref;
     await this.htmlRenderer.render(document.html);
+
+    const images = Array.from(this.htmlRenderer.getRoot().querySelectorAll<HTMLImageElement>("img"));
+    if (images.length > 0) {
+      await Promise.all(
+        images.map((img: HTMLImageElement) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+          });
+        })
+      );
+    }
+
+    this.baseHrefElement.href = originalBaseHref;
+
+    if (document.toc) {
+      this.renderToc(document.toc);
+    } else {
+      this.clearToc();
+    }
+  }
+
+  private renderToc(items: TableOfContentsItem[]): void {
+    const nav = document.createElement("nav");
+    nav.className = "toc-nav";
+    const ul = document.createElement("ul");
+    ul.className = "toc-list";
+
+    for (const item of items) {
+      const li = document.createElement("li");
+      li.className = `toc-item toc-level-${item.level}`;
+      const a = document.createElement("a");
+      a.href = `#${item.id}`;
+      a.textContent = item.text;
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
+
+    nav.appendChild(ul);
+    this.tocSidebar.innerHTML = "";
+    this.tocSidebar.appendChild(nav);
+
+    this.tocSidebar.querySelectorAll(".toc-list a").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        const href = (link as HTMLAnchorElement).getAttribute("href");
+        if (!href) return;
+        const targetId = href.substring(1);
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    });
+  }
+
+  private clearToc(): void {
+    this.tocSidebar.innerHTML = '<p class="sidebar-empty">No table of contents available.</p>';
   }
 
   private applySidebarVisibility(visible: boolean): void {

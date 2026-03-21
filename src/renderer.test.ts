@@ -17,7 +17,16 @@ describe("AppBootstrap", () => {
     renderSpy = vi.fn().mockResolvedValue(undefined);
 
     mockHtmlRenderer = {
-      render: renderSpy
+      render: renderSpy,
+      getRoot: () => {
+        const el = document.getElementById("app");
+        if (!el) {
+          const created = document.createElement("div");
+          created.id = "app";
+          return created;
+        }
+        return el;
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 

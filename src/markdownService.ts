@@ -1,14 +1,23 @@
 import { marked } from "marked";
-import type { MarkdownRenderer } from "./contracts";
+import type { MarkdownRenderer, TableOfContentsItem } from "./contracts";
 import { createSyntaxHighlighter } from "./syntaxHighlighter";
+
+type MarkedInstance = typeof marked;
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
 
 interface CodeToken {
   text: string;
   lang?: string;
   escaped?: boolean;
 }
-
-type MarkedInstance = typeof marked;
 
 function escapeHtml(text: string): string {
   return text
@@ -23,29 +32,47 @@ export class MarkedMarkdownService implements MarkdownRenderer {
 
   constructor(private readonly marked: MarkedInstance) {
     const syntaxHighlighter = this.syntaxHighlighter;
-    this.marked.use({
-      gfm: true,
-      breaks: false,
-      renderer: {
-        code(token: CodeToken): string {
-          const code = token.escaped ? token.text : escapeHtml(token.text);
-          const language = token.lang;
+    const renderer = new this.marked.Renderer();
 
-          if (language === "mermaid") {
-            return `<pre><code class="language-mermaid">${code}</code></pre>`;
-          }
+    renderer.heading = ({ text, depth }: { text: string; depth: number }) => {
+      const id = slugify(text);
+      return `<h${depth} id="${id}">${text}</h${depth}>`;
+    };
 
-          const highlighted = syntaxHighlighter.highlight(token.text, language);
+    renderer.code = function(token: CodeToken): string {
+      const code = token.escaped ? token.text : escapeHtml(token.text);
+      const language = token.lang;
 
-          const classes = ["hljs", ...(language ? [`language-${language}`] : [])];
-          const classAttr = `class="${classes.join(" ")}"`;
-          return `<pre><code ${classAttr}>${highlighted}</code></pre>`;
-        }
+      if (language === "mermaid") {
+        return `<pre><code class="language-mermaid">${code}</code></pre>`;
       }
-    });
+
+      const highlighted = syntaxHighlighter.highlight(token.text, language);
+
+      const classes = ["hljs", ...(language ? [`language-${language}`] : [])];
+      const classAttr = `class="${classes.join(" ")}"`;
+      return `<pre><code ${classAttr}>${highlighted}</code></pre>`;
+    };
+
+    this.marked.setOptions({ renderer, gfm: true, breaks: false });
   }
 
-  render(markdown: string): string {
-    return this.marked.parse(markdown) as string;
+  render(markdown: string): { html: string; toc?: TableOfContentsItem[] } {
+    const tokens = this.marked.lexer(markdown);
+    const toc: TableOfContentsItem[] = [];
+
+    for (const token of tokens) {
+      if (token.type === "heading") {
+        const text = token.text || "";
+        toc.push({
+          id: slugify(text),
+          text: text,
+          level: token.depth,
+        });
+      }
+    }
+
+    const html = this.marked.parser(tokens) as string;
+    return { html, toc: toc.length > 0 ? toc : undefined };
   }
 }

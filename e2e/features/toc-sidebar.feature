@@ -48,3 +48,27 @@ Feature: Table of contents sidebar visibility
       | initial_visibility | final_menu_state |
       | hidden             | checked          |
       | visible            | unchecked        |
+
+  Scenario: Sidebar displays TOC heading from markdown
+    Given the app is showing the "toc-test.md" markdown document
+    And the table of contents sidebar is visible
+    Then the table of contents should contain "TOC Test Document"
+
+  Scenario: Sidebar displays all heading levels
+    Given the app is showing the "toc-test.md" markdown document
+    And the table of contents sidebar is visible
+    Then the table of contents should contain "TOC Test Document"
+    And the table of contents should contain "First Heading"
+    And the table of contents should contain "Second Heading"
+
+  Scenario: Clicking TOC item scrolls to heading
+    Given the app is showing the "toc-test.md" markdown document
+    And the table of contents sidebar is visible
+    When the user clicks the TOC link for "First Heading"
+    Then a heading should be visible
+
+  Scenario: TOC updates when markdown file is modified
+    Given the app is showing the "toc-test.md" markdown document
+    And the table of contents sidebar is visible
+    When the markdown file "toc-test.md" is modified to add a new heading "Live TOC Auto-Refresh"
+    Then the table of contents should contain "Live TOC Auto-Refresh"
