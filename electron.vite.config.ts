@@ -5,8 +5,10 @@ const rootDir = process.cwd();
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
     build: {
+      externalizeDeps: {
+        exclude: ["highlight.js"]
+      },
       outDir: "out/main",
       emptyOutDir: true,
       rollupOptions: {
