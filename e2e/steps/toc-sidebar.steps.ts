@@ -213,12 +213,12 @@ When("the user presses F6", async function (this: E2EWorld) {
     const windows = electron.BrowserWindow.getAllWindows();
     if (windows.length > 0) {
       const win = windows[0];
-      let receivedEvent = false;
+      let eventDetails: { key: string; type: string; keyCode: string } | null = null;
       
-      // Add a one-time listener to check if before-input-event fires
-      const handler = (event: unknown, input: { key: string; type: string }) => {
-        receivedEvent = true;
-        console.log(`[MAIN] before-input-event received: key="${input.key}" type="${input.type}"`);
+      // Add a one-time listener to capture the event details
+      const handler = (event: unknown, input: { key: string; type: string; keyCode: string }) => {
+        eventDetails = { key: input.key, type: input.type, keyCode: input.keyCode };
+        console.log(`[MAIN] before-input-event: key="${input.key}" type="${input.type}" keyCode="${input.keyCode}"`);
       };
       win.webContents.on("before-input-event", handler);
       
@@ -234,10 +234,10 @@ When("the user presses F6", async function (this: E2EWorld) {
       // Remove handler
       win.webContents.removeListener("before-input-event", handler);
       
-      return { receivedEvent, windowCount: windows.length };
+      return { eventDetails, windowCount: windows.length };
     }
-    return { receivedEvent: false, windowCount: 0 };
+    return { eventDetails: null, windowCount: 0 };
   });
   
-  console.warn(`[E2E] Result: receivedEvent=${result.receivedEvent}, windowCount=${result.windowCount}`);
+  console.warn(`[E2E] Event details: ${JSON.stringify(result.eventDetails)}, windowCount=${result.windowCount}`);
 });
