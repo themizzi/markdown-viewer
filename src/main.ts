@@ -46,11 +46,10 @@ function installBeforeInputEventHandler(window: BrowserWindow): void {
     key: string;
     code: string;
   }
-  console.warn("[before-input-event] Installing handler");
   window.webContents.on("before-input-event", (_event, input: Input) => {
-    console.warn(`[before-input-event] Received input: key=${input.key}, code=${input.code}, type=${input.type}, shortcut=${COMMANDS.toggleToc.shortcut}`);
+    console.warn(`[before-input-event] Received: key="${input.key}" type="${input.type}" code="${input.code}"`);
     if (input.key === COMMANDS.toggleToc.shortcut && input.type === "keyDown") {
-      console.warn("[before-input-event] F6 detected, executing toggle-toc command");
+      console.warn("[before-input-event] MATCH! Executing toggle-toc");
       executeCommand("toggle-toc");
     }
   });
