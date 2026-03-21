@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import type { ViewerApi, RenderedDocument, SidebarApi } from "./contracts";
 import { AppBootstrap } from "./rendererBootstrap";
 
@@ -9,6 +9,9 @@ describe("AppBootstrap", () => {
   let mockViewerApi: ViewerApi;
   let mockHtmlRenderer: { render: (html: string) => Promise<void> };
   let renderSpy: ReturnType<typeof vi.fn>;
+  let mockDocumentBase: HTMLBaseElement;
+  let mockTocToggleButton: HTMLButtonElement;
+  let mockTocSidebar: HTMLElement;
 
   beforeEach(() => {
     renderSpy = vi.fn().mockResolvedValue(undefined);
@@ -26,15 +29,40 @@ describe("AppBootstrap", () => {
 
     mockViewerApi = {
       getHtml: vi.fn().mockResolvedValue({
-        html: "<h1>Initial HTML</h1>"
+        html: "<h1>Initial HTML</h1>",
+        baseHref: "./"
       } as RenderedDocument),
       onHtmlUpdated: vi.fn().mockReturnValue(() => {}),
       sidebar: mockSidebarApi
     };
+
+    // Create mock DOM elements
+    mockDocumentBase = {
+      href: "./"
+    } as HTMLBaseElement;
+
+    mockTocToggleButton = {
+      setAttribute: vi.fn(),
+      addEventListener: vi.fn()
+    } as unknown as HTMLButtonElement;
+
+    mockTocSidebar = {
+      hidden: false
+    } as HTMLElement;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("fetches and renders initial document on start", async () => {
-    const bootstrap = new AppBootstrap(mockViewerApi, mockHtmlRenderer as never);
+    const bootstrap = new AppBootstrap(
+      mockViewerApi,
+      mockHtmlRenderer as never,
+      mockDocumentBase,
+      mockTocToggleButton,
+      mockTocSidebar
+    );
 
     await bootstrap.start();
 
@@ -43,7 +71,13 @@ describe("AppBootstrap", () => {
   });
 
   it("subscribes to HTML updates on start", async () => {
-    const bootstrap = new AppBootstrap(mockViewerApi, mockHtmlRenderer as never);
+    const bootstrap = new AppBootstrap(
+      mockViewerApi,
+      mockHtmlRenderer as never,
+      mockDocumentBase,
+      mockTocToggleButton,
+      mockTocSidebar
+    );
 
     await bootstrap.start();
 
@@ -57,12 +91,19 @@ describe("AppBootstrap", () => {
       return () => {};
     });
 
-    const bootstrap = new AppBootstrap(mockViewerApi, mockHtmlRenderer as never);
+    const bootstrap = new AppBootstrap(
+      mockViewerApi,
+      mockHtmlRenderer as never,
+      mockDocumentBase,
+      mockTocToggleButton,
+      mockTocSidebar
+    );
     await bootstrap.start();
 
     // Trigger update callback
     updateHandler!({
-      html: "<h1>Updated HTML</h1>"
+      html: "<h1>Updated HTML</h1>",
+      baseHref: "./"
     } as RenderedDocument);
 
     // Verify render was called with updated HTML
@@ -77,13 +118,19 @@ describe("AppBootstrap", () => {
       return () => {};
     });
 
-    const bootstrap = new AppBootstrap(mockViewerApi, mockHtmlRenderer as never);
+    const bootstrap = new AppBootstrap(
+      mockViewerApi,
+      mockHtmlRenderer as never,
+      mockDocumentBase,
+      mockTocToggleButton,
+      mockTocSidebar
+    );
     await bootstrap.start();
 
     // Multiple updates
-    updateHandler!({ html: "<h1>Update 1</h1>" } as RenderedDocument);
-    updateHandler!({ html: "<h1>Update 2</h1>" } as RenderedDocument);
-    updateHandler!({ html: "<h1>Update 3</h1>" } as RenderedDocument);
+    updateHandler!({ html: "<h1>Update 1</h1>", baseHref: "./" } as RenderedDocument);
+    updateHandler!({ html: "<h1>Update 2</h1>", baseHref: "./" } as RenderedDocument);
+    updateHandler!({ html: "<h1>Update 3</h1>", baseHref: "./" } as RenderedDocument);
 
     const calls = vi.mocked(renderSpy).mock.calls;
     expect(calls.length).toBeGreaterThanOrEqual(4); // Initial + 3 updates
