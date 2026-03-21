@@ -1,6 +1,10 @@
 import { Then, When, Given } from "@cucumber/cucumber";
 import { expect } from "expect-webdriverio";
+import * as fs from "fs";
+import * as path from "path";
 import type { E2EWorld } from "../support/world.ts";
+
+const fixturesDir = path.resolve(process.cwd(), "e2e/fixtures");
 
 /**
  * Factory helpers that create Electron execute callbacks for TOC menu operations
@@ -140,4 +144,53 @@ Then("the View menu item for table of contents is checked", async function (this
   const menuState = await getTocMenuState(browser);
   expect(menuState.menuItemExists).toBe(true);
   expect(menuState.checked).toBe(true);
+});
+
+Then("the table of contents sidebar should show {string}", async function (this: E2EWorld, message: string) {
+  const browser = this.getBrowser();
+  const sidebar = await browser.$('[data-testid="toc-sidebar"]');
+  await expect(sidebar).toBeDisplayed();
+  const emptyMessage = await sidebar.$(".sidebar-empty");
+  await expect(emptyMessage).toHaveText(message);
+});
+
+Given("the app is showing the {string} markdown document", async function (this: E2EWorld, filename: string) {
+  const browser = this.getBrowser();
+  const filePath = path.join(fixturesDir, filename);
+  await browser.electron.execute((electron: unknown) => {
+    const { openFileFlow } = electron as { openFileFlow: { openFile: (path: string) => Promise<void> } };
+    return openFileFlow.openFile(filePath);
+  });
+  await browser.waitUntil(async () => {
+    const heading = await browser.$("h1");
+    return heading.isExisting();
+  }, { timeout: 10000 });
+});
+
+Then("the table of contents should contain {string}", async function (this: E2EWorld, text: string) {
+  const browser = this.getBrowser();
+  const sidebar = await browser.$('[data-testid="toc-sidebar"]');
+  const link = await sidebar.$(`.toc-list a=${text}`);
+  await expect(link).toBeExisting();
+});
+
+When("the user clicks the TOC link for {string}", async function (this: E2EWorld, text: string) {
+  const browser = this.getBrowser();
+  const sidebar = await browser.$('[data-testid="toc-sidebar"]');
+  const link = await sidebar.$(`.toc-list a=${text}`);
+  await link.click();
+});
+
+Then("the {string} heading should be visible", async function (this: E2EWorld, text: string) {
+  const browser = this.getBrowser();
+  const heading = await browser.$(`h1, h2, h3, h4, h5, h6=${text}`);
+  await expect(heading).toBeDisplayed();
+});
+
+When('the markdown file {string} is modified to add a new heading {string}', async function (this: E2EWorld, filename: string, newHeading: string) {
+  const filePath = path.join(fixturesDir, filename);
+  const content = fs.readFileSync(filePath, "utf-8");
+  const newContent = content + `\n\n## ${newHeading}\n\nNew content.`;
+  fs.writeFileSync(filePath, newContent);
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 });
