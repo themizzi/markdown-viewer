@@ -38,6 +38,7 @@ export class AppBootstrap {
   private readonly baseHrefElement: HTMLBaseElement;
   private readonly tocToggleButton: HTMLButtonElement;
   private readonly tocSidebar: HTMLElement;
+  private handleToggleClick: (() => void) | null = null;
 
   constructor(
     viewerApi: ViewerApi,
@@ -62,6 +63,13 @@ export class AppBootstrap {
     });
   }
 
+  destroy(): void {
+    if (this.handleToggleClick) {
+      this.tocToggleButton.removeEventListener("click", this.handleToggleClick);
+      this.handleToggleClick = null;
+    }
+  }
+
   private async renderDocument(document: { html: string; baseHref: string }): Promise<void> {
     this.baseHrefElement.href = document.baseHref;
     await this.htmlRenderer.render(document.html);
@@ -76,10 +84,10 @@ export class AppBootstrap {
     const initialVisibility = await this.viewerApi.sidebar.getInitialVisibility();
     this.applySidebarVisibility(initialVisibility);
 
-    const handleToggleClick = () => {
+    this.handleToggleClick = () => {
       void this.viewerApi.sidebar.requestToggleSidebar();
     };
-    this.tocToggleButton.addEventListener("click", handleToggleClick);
+    this.tocToggleButton.addEventListener("click", this.handleToggleClick);
 
     this.viewerApi.sidebar.onVisibilityChanged((visible) => {
       this.applySidebarVisibility(visible);
