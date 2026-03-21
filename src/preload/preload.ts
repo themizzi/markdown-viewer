@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { RenderedDocument, SidebarApi } from "./contracts";
+import type { RenderedDocument, SidebarApi } from "../shared/contracts.js";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";

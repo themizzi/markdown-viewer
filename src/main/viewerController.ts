@@ -4,7 +4,7 @@ import type {
   MarkdownRenderer,
   RenderedDocument,
   WatchHandle
-} from "./contracts";
+} from "../shared/contracts";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 

@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import type { MarkdownRenderer } from "./contracts";
+import type { MarkdownRenderer } from "../shared/contracts";
 
 type MarkedInstance = typeof marked;
 

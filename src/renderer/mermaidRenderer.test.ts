@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { MermaidRenderer } from "./mermaidRenderer";
-import type { MermaidApi } from "./contracts";
+import { MermaidRenderer } from "./mermaidRenderer.js";
+import type { MermaidApi } from "../shared/contracts.js";
 
 describe("MermaidRenderer", () => {
   let mockMermaid: MermaidApi;

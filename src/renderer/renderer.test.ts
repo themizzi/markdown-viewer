@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import type { ViewerApi, RenderedDocument, SidebarApi } from "./contracts";
-import { AppBootstrap } from "./rendererBootstrap";
+import type { ViewerApi, RenderedDocument, SidebarApi } from "../shared/contracts.js";
+import { AppBootstrap } from "./rendererBootstrap.js";
 
 /**
  * Tests for AppBootstrap helper class that coordinates rendering flow.

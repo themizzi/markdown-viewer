@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <base id="document-base" href="./" />
+    <title>Markdown Viewer</title>
+    <script>
+      if (/Mac|Darwin/i.test(navigator.userAgent)) {
+        document.documentElement.classList.add("platform-macos");
+      }
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header id="title-bar">
+      <div class="toolbar">
+        <button
+          type="button"
+          class="toc-toggle-button"
+          data-testid="toc-toggle-button"
+          aria-label="Toggle table of contents"
+          aria-pressed="false"
+        >
+          TOC
+        </button>
+      </div>
+    </header>
+    <div class="layout-wrapper">
+      <aside class="toc-sidebar" data-testid="toc-sidebar" hidden>
+        <h2 class="sidebar-title">Table of Contents</h2>
+        <p class="sidebar-empty">No table of contents available.</p>
+      </aside>
+      <main id="app" class="markdown-body"></main>
+    </div>
+    <script src="../../node_modules/mermaid/dist/mermaid.min.js"></script>
+    <script type="module" src="../../dist/renderer/renderer.js"></script>
+  </body>
+</html>

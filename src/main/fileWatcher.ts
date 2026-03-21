@@ -1,4 +1,4 @@
-import type { FileWatcher, WatchHandle } from "./contracts";
+import type { FileWatcher, WatchHandle } from "../shared/contracts";
 
 class ChokidarWatchHandle implements WatchHandle {
   constructor(private readonly closeFn: () => Promise<void>) {}

@@ -1,4 +1,4 @@
-import type { DiagramRenderer, MermaidApi } from "./contracts";
+import type { DiagramRenderer, MermaidApi } from "../shared/contracts.js";
 
 export class MermaidRenderer implements DiagramRenderer {
   private readonly mermaid: MermaidApi;

@@ -1,4 +1,4 @@
-import type { DiagramRenderer } from "./contracts";
+import type { DiagramRenderer } from "../shared/contracts.js";
 
 export class HtmlRenderer {
   private readonly root: HTMLElement;

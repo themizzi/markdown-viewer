@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Volume } from "memfs";
 import { promises as fs } from "node:fs";
 import { pathToFileURL } from "node:url";
-import type { FileWatcher, WatchHandle, MarkdownRenderer } from "./contracts";
+import type { FileWatcher, WatchHandle, MarkdownRenderer } from "../shared/contracts";
 import { ViewerController } from "./viewerController";
 import { FileReaderService } from "./fileReader";
 

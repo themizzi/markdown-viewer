@@ -8,7 +8,7 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['text', 'json', 'html', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.d.ts', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/renderer.ts', 'src/preload.ts', 'src/main.ts'],
+      exclude: ['src/**/*.d.ts', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/main/main.ts', 'src/preload/preload.ts', 'src/renderer/renderer.ts'],
     },
   },
 });

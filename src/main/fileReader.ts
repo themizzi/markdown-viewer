@@ -1,5 +1,5 @@
 import { promises as fs } from "node:fs";
-import type { FileReader } from "./contracts";
+import type { FileReader } from "../shared/contracts";
 
 export class FileReaderService implements FileReader {
   constructor(private readonly fileSystem: typeof fs) {}

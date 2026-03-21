@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Window } from "happy-dom";
-import { HtmlRenderer } from "./htmlRenderer";
-import type { DiagramRenderer } from "./contracts";
+import { HtmlRenderer } from "./htmlRenderer.js";
+import type { DiagramRenderer } from "../shared/contracts.js";
 
 describe("HtmlRenderer", () => {
   let container: HTMLElement;

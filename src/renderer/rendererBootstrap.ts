@@ -1,6 +1,6 @@
-import type { MermaidApi, ViewerApi } from "./contracts";
-import { HtmlRenderer } from "./htmlRenderer";
-import { MermaidRenderer } from "./mermaidRenderer";
+import type { MermaidApi, ViewerApi } from "../shared/contracts.js";
+import { HtmlRenderer } from "./htmlRenderer.js";
+import { MermaidRenderer } from "./mermaidRenderer.js";
 
 interface DomElements {
   baseHrefElement: HTMLBaseElement;

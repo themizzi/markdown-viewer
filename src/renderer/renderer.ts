@@ -1,5 +1,5 @@
-import type { MermaidApi, ViewerApi } from "./contracts";
-import { createApp } from "./rendererBootstrap";
+import type { MermaidApi, ViewerApi } from "../shared/contracts.js";
+import { createApp } from "./rendererBootstrap.js";
 
 declare global {
   interface Window {
