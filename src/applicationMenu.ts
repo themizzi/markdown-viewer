@@ -1,5 +1,27 @@
 import { Menu, MenuItemConstructorOptions, app, shell } from "electron";
 
+function createViewSubmenu(onToggleToc: () => void): MenuItemConstructorOptions[] {
+  return [
+    { role: "reload" as const },
+    { role: "forceReload" as const },
+    { role: "toggleDevTools" as const },
+    { type: "separator" as const },
+    { role: "resetZoom" as const },
+    { role: "zoomIn" as const },
+    { role: "zoomOut" as const },
+    { type: "separator" as const },
+    { role: "togglefullscreen" as const },
+    { type: "separator" as const },
+    {
+      label: "Show Table of Contents",
+      id: "view-toggle-table-of-contents",
+      type: "checkbox" as const,
+      checked: false,
+      click: onToggleToc
+    }
+  ];
+}
+
 export function createApplicationMenu(
   onOpen: () => void = () => {},
   onToggleToc: () => void = () => {}
@@ -48,25 +70,7 @@ export function createApplicationMenu(
         },
         {
           label: "View",
-          submenu: [
-            { role: "reload" as const },
-            { role: "forceReload" as const },
-            { role: "toggleDevTools" as const },
-            { type: "separator" as const },
-            { role: "resetZoom" as const },
-            { role: "zoomIn" as const },
-            { role: "zoomOut" as const },
-            { type: "separator" as const },
-            { role: "togglefullscreen" as const },
-            { type: "separator" as const },
-            {
-              label: "Show Table of Contents",
-              id: "view-toggle-table-of-contents",
-              type: "checkbox" as const,
-              checked: false,
-              click: onToggleToc
-            }
-          ]
+          submenu: createViewSubmenu(onToggleToc)
         },
         {
           label: "Window",
@@ -116,25 +120,7 @@ export function createApplicationMenu(
         },
         {
           label: "View",
-          submenu: [
-            { role: "reload" as const },
-            { role: "forceReload" as const },
-            { role: "toggleDevTools" as const },
-            { type: "separator" as const },
-            { role: "resetZoom" as const },
-            { role: "zoomIn" as const },
-            { role: "zoomOut" as const },
-            { type: "separator" as const },
-            { role: "togglefullscreen" as const },
-            { type: "separator" as const },
-            {
-              label: "Show Table of Contents",
-              id: "view-toggle-table-of-contents",
-              type: "checkbox" as const,
-              checked: false,
-              click: onToggleToc
-            }
-          ]
+          submenu: createViewSubmenu(onToggleToc)
         }
       ];
 
