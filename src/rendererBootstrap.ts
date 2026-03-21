@@ -75,15 +75,17 @@ export class AppBootstrap {
     await this.htmlRenderer.render(document.html);
 
     const images = Array.from(this.htmlRenderer.getRoot().querySelectorAll<HTMLImageElement>("img"));
-    await Promise.all(
-      images.map((img: HTMLImageElement) => {
-        if (img.complete) return Promise.resolve();
-        return new Promise((resolve) => {
-          img.addEventListener("load", resolve, { once: true });
-          img.addEventListener("error", resolve, { once: true });
-        });
-      })
-    );
+    if (images.length > 0) {
+      await Promise.all(
+        images.map((img: HTMLImageElement) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+          });
+        })
+      );
+    }
 
     this.baseHrefElement.href = originalBaseHref;
 
