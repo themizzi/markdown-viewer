@@ -1,4 +1,4 @@
-import type { ViewerApi } from "./contracts";
+import type { MermaidApi, ViewerApi } from "./contracts";
 import { HtmlRenderer } from "./htmlRenderer";
 import { MermaidRenderer } from "./mermaidRenderer";
 
@@ -67,7 +67,7 @@ export class AppBootstrap {
 /**
  * Create a bootstrapped app instance with renderers.
  */
-export function createApp(viewerApi: ViewerApi, mermaid: unknown): AppBootstrap {
+export function createApp(viewerApi: ViewerApi, mermaid: MermaidApi): AppBootstrap {
   // Validate required DOM elements
   const root = document.getElementById("app");
   if (!root) {
@@ -90,7 +90,7 @@ export function createApp(viewerApi: ViewerApi, mermaid: unknown): AppBootstrap 
   }
 
   // Initialize mermaid renderer
-  const mermaidRenderer = new MermaidRenderer(mermaid as never);
+  const mermaidRenderer = new MermaidRenderer(mermaid);
   mermaidRenderer.initialize();
 
   // Create HTML renderer with mermaid support
