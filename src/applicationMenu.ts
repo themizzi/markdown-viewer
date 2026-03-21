@@ -1,6 +1,11 @@
 import { Menu, MenuItemConstructorOptions, app, shell } from "electron";
 
-export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
+export function createApplicationMenu(
+  onOpen: () => void = () => {},
+  onToggleToc: () => void = () => {},
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onSidebarVisibilityChanged: (visible: boolean) => void = () => {}
+): Menu {
   const isMac = process.platform === "darwin";
 
   const template: MenuItemConstructorOptions[] = isMac
@@ -54,7 +59,15 @@ export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
             { role: "zoomIn" as const },
             { role: "zoomOut" as const },
             { type: "separator" as const },
-            { role: "togglefullscreen" as const }
+            { role: "togglefullscreen" as const },
+            { type: "separator" as const },
+            {
+              label: "Show Table of Contents",
+              id: "view-toggle-table-of-contents",
+              type: "checkbox" as const,
+              checked: false,
+              click: onToggleToc
+            }
           ]
         },
         {
@@ -114,7 +127,15 @@ export function createApplicationMenu(onOpen: () => void = () => {}): Menu {
             { role: "zoomIn" as const },
             { role: "zoomOut" as const },
             { type: "separator" as const },
-            { role: "togglefullscreen" as const }
+            { role: "togglefullscreen" as const },
+            { type: "separator" as const },
+            {
+              label: "Show Table of Contents",
+              id: "view-toggle-table-of-contents",
+              type: "checkbox" as const,
+              checked: false,
+              click: onToggleToc
+            }
           ]
         }
       ];

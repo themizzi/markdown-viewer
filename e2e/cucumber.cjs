@@ -22,7 +22,10 @@ function parseAppArgsFromEnv() {
     return [...parsed];
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error(`startup-harness error: WDIO_APP_ARGS_JSON is malformed JSON: ${error.message}`);
+      throw new Error(
+        `startup-harness error: WDIO_APP_ARGS_JSON is malformed JSON: ${error.message}`,
+        { cause: error }
+      );
     }
 
     throw error;

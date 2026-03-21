@@ -27,9 +27,16 @@ export interface MermaidApi {
 export interface ViewerApi {
   getHtml(): Promise<RenderedDocument>;
   onHtmlUpdated(handler: (document: RenderedDocument) => void): () => void;
+  sidebar: SidebarApi;
 }
 
 export interface DiagramRenderer {
   hydrate(container: HTMLElement): void;
   initialize(): void;
+}
+
+export interface SidebarApi {
+  getInitialVisibility(): Promise<boolean>;
+  requestToggleSidebar(): Promise<void>;
+  onVisibilityChanged(callback: (visible: boolean) => void): () => void;
 }

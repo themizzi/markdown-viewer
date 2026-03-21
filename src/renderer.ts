@@ -3,6 +3,7 @@ declare global {
     viewerApi: {
       getHtml: () => Promise<import("./contracts").RenderedDocument>;
       onHtmlUpdated: (handler: (document: import("./contracts").RenderedDocument) => void) => () => void;
+      sidebar: import("./contracts").SidebarApi;
     };
     mermaid: {
       initialize: (config: Record<string, unknown>) => void;

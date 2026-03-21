@@ -12,14 +12,19 @@ import { createApplicationMenu } from "./applicationMenu";
 import { showOpenFileDialog } from "./openFileDialog";
 import { openFileFlow } from "./openFileFlow";
 import { resolveStartupFile } from "./startupOpenBehavior";
+import { SidebarVisibilityImpl } from "./sidebarVisibility";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
 const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
+const IPC_SIDEBAR_GET_INITIAL_VISIBILITY = "sidebar:get-initial-visibility";
+const IPC_SIDEBAR_REQUEST_TOGGLE = "sidebar:request-toggle";
+const IPC_SIDEBAR_VISIBILITY_CHANGED = "sidebar:visibility-changed";
 
 let mainWindow: BrowserWindow | null = null;
 let automationWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
+let sidebarVisibility: SidebarVisibilityImpl | null = null;
 
 function configureViewerWindow(window: BrowserWindow): void {
   window.setSize(1000, 760);
@@ -73,12 +78,29 @@ async function handleOpenRequest(): Promise<void> {
 }
 
 function installApplicationMenu(): void {
-  
-  const menu = createApplicationMenu(() => {
-    void handleOpenRequest().catch((error) => {
-      console.error("Failed to open file:", error);
-    });
-  });
+  const menu = createApplicationMenu(
+    () => {
+      void handleOpenRequest().catch((error) => {
+        console.error("Failed to open file:", error);
+      });
+    },
+    () => {
+      sidebarVisibility?.toggle();
+    },
+    (visible: boolean) => {
+      // Update menu item checked state when visibility changes
+      const appMenu = Menu.getApplicationMenu();
+      if (appMenu) {
+        const viewMenu = appMenu.items.find((item) => item.label === "View");
+        if (viewMenu && viewMenu.submenu) {
+          const tocItem = viewMenu.submenu.items.find((item) => item.id === "view-toggle-table-of-contents");
+          if (tocItem) {
+            tocItem.checked = visible;
+          }
+        }
+      }
+    }
+  );
 
   Menu.setApplicationMenu(menu);
 }
@@ -87,6 +109,7 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1000,
     height: 760,
+    titleBarStyle: "hiddenInset",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -112,6 +135,7 @@ function createAutomationWindow(): BrowserWindow {
     width: 1,
     height: 1,
     show: false,
+    titleBarStyle: "hiddenInset",
     focusable: true,
     skipTaskbar: true,
     webPreferences: {
@@ -145,6 +169,20 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
     html: "<p>Loading...</p>",
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  });
+
+  ipcMain.handle(IPC_SIDEBAR_GET_INITIAL_VISIBILITY, async () => {
+    if (!sidebarVisibility) {
+      return false;
+    }
+    return sidebarVisibility.getCurrentVisibility();
+  });
+
+  ipcMain.handle(IPC_SIDEBAR_REQUEST_TOGGLE, async () => {
+    if (!sidebarVisibility) {
+      return;
+    }
+    sidebarVisibility.toggle();
   });
 
   if (!app.isPackaged) {
@@ -181,6 +219,29 @@ function registerActivateHandler(): void {
 
 app.whenReady().then(async () => {
   const args = process.argv.slice(2);
+
+  // Initialize sidebar visibility
+  sidebarVisibility = new SidebarVisibilityImpl();
+
+  // Subscribe to sidebar visibility changes and update menu + send to renderer
+  sidebarVisibility.onVisibilityChange((visible: boolean) => {
+    // Update the menu item checked state
+    const appMenu = Menu.getApplicationMenu();
+    if (appMenu) {
+      const viewMenu = appMenu.items.find((item) => item.label === "View");
+      if (viewMenu && viewMenu.submenu) {
+        const tocItem = viewMenu.submenu.items.find((item) => item.id === "view-toggle-table-of-contents");
+        if (tocItem) {
+          tocItem.checked = visible;
+        }
+      }
+    }
+
+    // Notify the renderer
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(IPC_SIDEBAR_VISIBILITY_CHANGED, visible);
+    }
+  });
 
   installApplicationMenu();
   registerIpcHandlers();
