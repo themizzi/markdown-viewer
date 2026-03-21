@@ -26,8 +26,10 @@ let controller: ViewerController | null = null;
 let sidebarVisibility: SidebarVisibility | undefined = undefined;
 
 function executeCommand(command: string): void {
+  console.warn(`[Command] Executing command: ${command}`);
   switch (command) {
     case "toggle-toc":
+      console.warn("[Command] Toggling TOC sidebar");
       sidebarVisibility?.toggle();
       break;
     case "open-file":
@@ -44,8 +46,11 @@ function installBeforeInputEventHandler(window: BrowserWindow): void {
     key: string;
     code: string;
   }
+  console.warn("[before-input-event] Installing handler");
   window.webContents.on("before-input-event", (_event, input: Input) => {
+    console.warn(`[before-input-event] Received input: key=${input.key}, code=${input.code}, type=${input.type}, shortcut=${COMMANDS.toggleToc.shortcut}`);
     if (input.key === COMMANDS.toggleToc.shortcut && input.type === "keyDown") {
+      console.warn("[before-input-event] F6 detected, executing toggle-toc command");
       executeCommand("toggle-toc");
     }
   });

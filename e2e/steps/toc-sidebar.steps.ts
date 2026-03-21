@@ -209,13 +209,19 @@ Then("the tooltip should contain {string}", async function (this: E2EWorld, text
 When("the user presses F6", async function (this: E2EWorld) {
   const browser = this.getBrowser();
   await browser.electron.execute(async (electron) => {
+    console.warn("[E2E] Sending F6 key press via sendInputEvent");
     const windows = electron.BrowserWindow.getAllWindows();
+    console.warn(`[E2E] Found ${windows.length} window(s)`);
     if (windows.length > 0) {
       const win = windows[0];
+      console.warn("[E2E] Sending keyDown event for F6");
       win.webContents.sendInputEvent({
         type: "keyDown",
         keyCode: "F6"
       });
+      console.warn("[E2E] Sent keyDown event for F6");
+    } else {
+      console.warn("[E2E] No windows found!");
     }
   });
 });
