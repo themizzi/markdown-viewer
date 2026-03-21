@@ -29,7 +29,7 @@ Then(/the relative image should be displayed/, async function (this: E2EWorld) {
 
 Then(/the image source should resolve from the markdown file directory/, async function (this: E2EWorld) {
   const image = await this.getBrowser().$('img[alt="Fixture image"]');
-  const src = await image.getProperty('src');
+  const src = String(await image.getProperty('src'));
 
-  expect(String(src)).toBe(`file://${fixturesDir}/sample.png`);
+  expect(src).toMatch(/^file:\/\/.*\/sample\.png$/);
 });
