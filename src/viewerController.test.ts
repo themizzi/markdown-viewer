@@ -9,7 +9,7 @@ import { FileReaderService } from "./fileReader";
 describe("ViewerController", () => {
   let volume: Volume;
   let fileReader: FileReaderService;
-  let fakeMarkdownRenderer: { render: (markdown: string) => string };
+  let fakeMarkdownRenderer: { render: (markdown: string) => { html: string; toc?: unknown[] } };
   let capturedRenders: string[];
   let fakeWatchHandle: WatchHandle;
   let fakeFileWatcher: FileWatcher;
@@ -22,9 +22,9 @@ describe("ViewerController", () => {
     volume = new Volume();
 
     fakeMarkdownRenderer = {
-      render(markdown: string): string {
+      render(markdown: string) {
         capturedRenders.push(markdown);
-        return `<rendered>${markdown}</rendered>`;
+        return { html: `<rendered>${markdown}</rendered>`, toc: undefined };
       }
     };
 
