@@ -76,6 +76,7 @@ async function ensureSidebarVisible(browser: WebdriverIO.Browser): Promise<void>
 
   if (!isDisplayed) {
     await clickTocMenuItem(browser);
+    await expect(sidebar).toBeDisplayed();
   }
 }
 
@@ -85,28 +86,32 @@ async function ensureSidebarHidden(browser: WebdriverIO.Browser): Promise<void> 
 
   if (isDisplayed) {
     await clickTocMenuItem(browser);
+    await expect(sidebar).not.toBeDisplayed();
   }
 }
 
 Then("the table of contents sidebar should be {word}", async function (this: E2EWorld, state: string) {
   const browser = this.getBrowser();
   const sidebar = await browser.$('[data-testid="toc-sidebar"]');
-  const isDisplayed = await sidebar.isDisplayed().catch(() => false);
-  
+
   if (state === "visible") {
-    expect(isDisplayed).toBe(true);
+    await expect(sidebar).toBeDisplayed();
   } else if (state === "hidden") {
-    expect(isDisplayed).toBe(false);
+    await expect(sidebar).not.toBeDisplayed();
+  } else {
+    throw new Error(`Invalid state: ${state}. Expected "visible" or "hidden".`);
   }
 });
 
 Given("the table of contents sidebar is {word}", async function (this: E2EWorld, state: string) {
   const browser = this.getBrowser();
-  
+
   if (state === "visible") {
     await ensureSidebarVisible(browser);
   } else if (state === "hidden") {
     await ensureSidebarHidden(browser);
+  } else {
+    throw new Error(`Invalid state: ${state}. Expected "visible" or "hidden".`);
   }
 });
 
