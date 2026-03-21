@@ -9,6 +9,7 @@ import { FileWatcherService } from "./fileWatcher";
 import { MarkedMarkdownService } from "./markdownService";
 import { ViewerController } from "./viewerController";
 import { createApplicationMenu } from "./applicationMenu";
+import { COMMANDS } from "./commands";
 import { showOpenFileDialog } from "./openFileDialog";
 import { openFileFlow } from "./openFileFlow";
 import { resolveStartupFile } from "./startupOpenBehavior";
@@ -23,6 +24,32 @@ let mainWindow: BrowserWindow | null = null;
 let automationWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
 let sidebarVisibility: SidebarVisibility | undefined = undefined;
+
+function executeCommand(command: string): void {
+  switch (command) {
+    case "toggle-toc":
+      sidebarVisibility?.toggle();
+      break;
+    case "open-file":
+      void handleOpenRequest().catch((error) => {
+        console.error("Failed to open file:", error);
+      });
+      break;
+  }
+}
+
+function installBeforeInputEventHandler(window: BrowserWindow): void {
+  interface Input {
+    type: string;
+    key: string;
+    code: string;
+  }
+  window.webContents.on("before-input-event", (_event, input: Input) => {
+    if (input.key === COMMANDS.toggleToc.shortcut && input.type === "keyDown") {
+      executeCommand("toggle-toc");
+    }
+  });
+}
 
 function configureViewerWindow(window: BrowserWindow): void {
   window.setSize(1000, 760);
@@ -90,14 +117,8 @@ async function handleOpenRequest(): Promise<void> {
 
 function installApplicationMenu(): void {
   const menu = createApplicationMenu(
-    () => {
-      void handleOpenRequest().catch((error) => {
-        console.error("Failed to open file:", error);
-      });
-    },
-    () => {
-      sidebarVisibility?.toggle();
-    }
+    () => executeCommand("open-file"),
+    () => executeCommand("toggle-toc")
   );
 
   Menu.setApplicationMenu(menu);
@@ -118,6 +139,7 @@ function createWindow(): BrowserWindow {
   });
 
   configureViewerWindow(window);
+  installBeforeInputEventHandler(window);
 
   return window;
 }

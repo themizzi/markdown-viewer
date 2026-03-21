@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { RenderedDocument, SidebarApi } from "./contracts";
+import type { CommandShortcuts, RenderedDocument, SidebarApi } from "./contracts";
+import { COMMANDS } from "./commands";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
@@ -8,7 +9,18 @@ const IPC_SIDEBAR_GET_INITIAL_VISIBILITY = "sidebar:get-initial-visibility";
 const IPC_SIDEBAR_REQUEST_TOGGLE = "sidebar:request-toggle";
 const IPC_SIDEBAR_VISIBILITY_CHANGED = "sidebar:visibility-changed";
 
-const api = {
+const commands: CommandShortcuts = {
+  toggleTocShortcut: COMMANDS.toggleToc.shortcut,
+  toggleTocDescription: COMMANDS.toggleToc.description
+};
+
+const api: {
+  getHtml: () => Promise<RenderedDocument>;
+  onHtmlUpdated: (handler: (document: RenderedDocument) => void) => () => void;
+  sidebar: SidebarApi;
+  commands: CommandShortcuts;
+  openFile?: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+} = {
   getHtml: (): Promise<RenderedDocument> => ipcRenderer.invoke(IPC_GET_HTML),
   onHtmlUpdated: (handler: (document: RenderedDocument) => void): (() => void) => {
     const listener = (_event: unknown, document: RenderedDocument): void => handler(document);
@@ -29,7 +41,8 @@ const api = {
         ipcRenderer.removeListener(IPC_SIDEBAR_VISIBILITY_CHANGED, listener);
       };
     }
-  } as SidebarApi
+  } as SidebarApi,
+  commands
 };
 
 // Only expose file open in dev/test builds

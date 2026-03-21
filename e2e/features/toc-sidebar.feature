@@ -72,3 +72,20 @@ Feature: Table of contents sidebar visibility
     And the table of contents sidebar is visible
     When the markdown file "toc-test.md" is modified to add a new heading "Live TOC Auto-Refresh"
     Then the table of contents should contain "Live TOC Auto-Refresh"
+
+  Scenario: Toolbar button tooltip shows keyboard shortcut
+    Given the app is showing the initial test markdown document
+    When the user hovers over the table of contents toggle button
+    Then the tooltip should contain "F6"
+
+  Scenario: Pressing F6 opens the table of contents sidebar
+    Given the app is showing the initial test markdown document
+    And the table of contents sidebar is hidden
+    When the user presses F6
+    Then the table of contents sidebar should be visible
+
+  Scenario: Pressing F6 hides the table of contents sidebar
+    Given the app is showing the initial test markdown document
+    And the table of contents sidebar is visible
+    When the user presses F6
+    Then the table of contents sidebar should be hidden
