@@ -2,60 +2,72 @@ import { Then, When, Given } from "@cucumber/cucumber";
 import { expect } from "expect-webdriverio";
 import type { E2EWorld } from "../support/world.ts";
 
+/**
+ * Factory helpers that create Electron execute callbacks for TOC menu operations
+ * Encapsulate the common menu traversal logic: View > Table of Contents (id="view-toggle-table-of-contents")
+ * These helpers reduce code duplication across getTocMenuState() and clickTocMenuItem()
+ */
+
+const createGetTocMenuState = () => (electron: unknown) => {
+  // Shared menu traversal helper
+  const { Menu } = electron as { Menu: { getApplicationMenu: () => unknown } };
+  const menu = Menu.getApplicationMenu();
+  if (!menu) throw new Error("No application menu found");
+
+  const viewMenu = (menu as { items: unknown[] }).items.find(
+    (item: unknown) => (item as { label?: string }).label === "View"
+  );
+  if (!viewMenu || !(viewMenu as { submenu?: unknown }).submenu) {
+    throw new Error("View menu not found");
+  }
+
+  const tocItem = ((viewMenu as { submenu: { items: unknown[] } }).submenu).items.find(
+    (item: unknown) => (item as { id?: string }).id === "view-toggle-table-of-contents"
+  );
+  if (!tocItem) {
+    throw new Error("View > Table of Contents menu item not found");
+  }
+
+  return {
+    menuItemExists: true,
+    checked: (tocItem as { checked?: boolean }).checked ?? false,
+  };
+};
+
+const createClickTocMenuItem = () => (electron: unknown) => {
+  // Shared menu traversal helper
+  const { Menu } = electron as { Menu: { getApplicationMenu: () => unknown } };
+  const menu = Menu.getApplicationMenu();
+  if (!menu) throw new Error("No application menu found");
+
+  const viewMenu = (menu as { items: unknown[] }).items.find(
+    (item: unknown) => (item as { label?: string }).label === "View"
+  );
+  if (!viewMenu || !(viewMenu as { submenu?: unknown }).submenu) {
+    throw new Error("View menu not found");
+  }
+
+  const tocItem = ((viewMenu as { submenu: { items: unknown[] } }).submenu).items.find(
+    (item: unknown) => (item as { id?: string }).id === "view-toggle-table-of-contents"
+  );
+  if (!tocItem) {
+    throw new Error("View > Table of Contents menu item not found");
+  }
+
+  const click = (tocItem as { click?: unknown }).click;
+  if (typeof click !== "function") {
+    throw new Error("View > Table of Contents menu item has no valid click handler");
+  }
+
+  (click as () => void)();
+};
+
 async function getTocMenuState(browser: WebdriverIO.Browser): Promise<{ menuItemExists: boolean; checked: boolean }> {
-  return browser.electron.execute((electron: unknown) => {
-    const { Menu } = electron as { Menu: { getApplicationMenu: () => unknown } };
-    const menu = Menu.getApplicationMenu();
-    if (!menu) throw new Error("No application menu found");
-
-    const viewMenu = (menu as { items: unknown[] }).items.find(
-      (item: unknown) => (item as { label?: string }).label === "View"
-    );
-    if (!viewMenu || !(viewMenu as { submenu?: unknown }).submenu) {
-      throw new Error("View menu not found");
-    }
-
-    const tocItem = ((viewMenu as { submenu: { items: unknown[] } }).submenu).items.find(
-      (item: unknown) => (item as { id?: string }).id === "view-toggle-table-of-contents"
-    );
-    if (!tocItem) {
-      throw new Error("View > Table of Contents menu item not found");
-    }
-
-    return {
-      menuItemExists: true,
-      checked: (tocItem as { checked?: boolean }).checked ?? false,
-    };
-  });
+  return browser.electron.execute(createGetTocMenuState());
 }
 
 async function clickTocMenuItem(browser: WebdriverIO.Browser): Promise<void> {
-  await browser.electron.execute((electron: unknown) => {
-    const { Menu } = electron as { Menu: { getApplicationMenu: () => unknown } };
-    const menu = Menu.getApplicationMenu();
-    if (!menu) throw new Error("No application menu found");
-
-    const viewMenu = (menu as { items: unknown[] }).items.find(
-      (item: unknown) => (item as { label?: string }).label === "View"
-    );
-    if (!viewMenu || !(viewMenu as { submenu?: unknown }).submenu) {
-      throw new Error("View menu not found");
-    }
-
-    const tocItem = ((viewMenu as { submenu: { items: unknown[] } }).submenu).items.find(
-      (item: unknown) => (item as { id?: string }).id === "view-toggle-table-of-contents"
-    );
-    if (!tocItem) {
-      throw new Error("View > Table of Contents menu item not found");
-    }
-
-    const click = (tocItem as { click?: unknown }).click;
-    if (typeof click !== "function") {
-      throw new Error("View > Table of Contents menu item has no valid click handler");
-    }
-
-    (click as () => void)();
-  });
+  await browser.electron.execute(createClickTocMenuItem());
 }
 
 async function ensureSidebarVisible(browser: WebdriverIO.Browser): Promise<void> {
