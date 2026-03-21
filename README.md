@@ -32,9 +32,19 @@ If no file is specified, it defaults to `README.md` in the current directory.
 
 ## Development
 
-Build the TypeScript code:
+Run with electron-vite (dev server + Electron):
+```bash
+npm run dev
+```
+
+Build production artifacts:
 ```bash
 npm run build
+```
+
+Type-check the TypeScript code:
+```bash
+npm run typecheck
 ```
 
 Run tests:
@@ -62,6 +72,7 @@ WDIO_APP_ARGS_JSON='[]' npm run test:e2e -- --tags @startup-no-args
 - App startup args come from `WDIO_APP_ARGS_JSON` (default `['--test-file=./e2e/fixtures/test.md']`) and are parsed in `e2e/support/runtime/appConfig.ts`.
 - Platform tag filtering is applied in `e2e/cucumber.cjs` to preserve existing `@linux`, `@macos`, and `@startup-no-args` behavior.
 - Packaged-binary preflight and Linux Xvfb setup are handled in `BeforeAll`/`AfterAll` via `e2e/support/hooks.ts` and `e2e/support/runtime/xvfb.ts`.
+- CDP bridge startup tuning can be adjusted with optional env vars: `WDIO_CDP_BRIDGE_TIMEOUT_MS`, `WDIO_CDP_BRIDGE_RETRY_COUNT`, and `WDIO_CDP_BRIDGE_WAIT_INTERVAL_MS`.
 
 ### macOS File Dialog Testing
 
