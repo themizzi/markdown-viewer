@@ -137,48 +137,55 @@ export async function dismissMacOpenDialog(): Promise<void> {
 }
 
 export async function openFileViaDialog(fileName: string): Promise<void> {
+  // First ensure the app is running via WebDriver
+  // Then use AppleScript to interact with the file dialog
+  
   const script = `
     tell application "System Events"
       tell process "markdown-viewer"
         set frontmost to true
-        delay 0.3
+        delay 0.5
         
-        -- Trigger Cmd+O to open File menu
+        -- Trigger Cmd+O to open File > Open
         keystroke "o" using command down
-        delay 1
+        delay 1.5
         
-        -- Wait for dialog to appear
-        repeat 10 times
+        -- Wait for Open dialog
+        repeat 15 times
           try
-            if (exists window "Open") then
+            if (exists window 1) then
               exit repeat
             end if
           end try
-          delay 0.2
+          delay 0.3
         end repeat
         
-        -- Navigate to folder with Cmd+Shift+G
+        -- Use Go to Folder (Cmd+Shift+G)
         keystroke "g" using {command down, shift down}
         delay 0.5
         
-        -- Type the folder path
-        keystroke "${fixturesDir.replace(/\//g, "/")}"
+        -- Type the full path to the folder
+        keystroke "${fixturesDir}"
         delay 0.3
         key code 36 -- Return
-        delay 1
+        delay 1.5
         
-        -- Type the filename
+        -- Type filename
         keystroke "${fileName}"
         delay 0.3
         key code 36 -- Return
+        delay 0.5
+        
+        -- Press Return again to confirm if needed
+        key code 36
       end tell
     end tell
   `;
   
   try {
     runAppleScript(script);
-    // Wait for file to load
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Wait for file to load in the app
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   } catch (error) {
     const err = new Error(
       `${MAC_OPEN_DIALOG} Failed to open file via dialog: ${error instanceof Error ? error.message : String(error)}`

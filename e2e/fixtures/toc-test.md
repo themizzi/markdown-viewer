@@ -43,3 +43,7 @@ New content.
 ## New Heading
 
 New content.
+
+## New Heading
+
+New content.
