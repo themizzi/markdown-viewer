@@ -8,10 +8,6 @@ declare global {
   }
 }
 
-if (/Mac|Darwin/i.test(navigator.userAgent)) {
-  document.documentElement.classList.add("platform-macos");
-}
-
 const viewerApi: ViewerApi = window.viewerApi;
 const mermaidApi: MermaidApi = mermaid;
 

@@ -30,9 +30,16 @@ function configureViewerWindow(window: BrowserWindow): void {
   window.setFocusable(true);
 
   const rendererUrl = process.env.ELECTRON_RENDERER_URL;
-  if (rendererUrl) {
-    void window.loadURL(rendererUrl);
-    return;
+  if (!app.isPackaged && rendererUrl) {
+    try {
+      const parsedRendererUrl = new URL(rendererUrl);
+      if (parsedRendererUrl.protocol === "http:" || parsedRendererUrl.protocol === "https:") {
+        void window.loadURL(rendererUrl);
+        return;
+      }
+    } catch {
+      // Ignore invalid ELECTRON_RENDERER_URL and fall back to local renderer file.
+    }
   }
 
   void window.loadFile(path.join(__dirname, "../renderer/index.html"));
