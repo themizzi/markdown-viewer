@@ -29,7 +29,13 @@ function configureViewerWindow(window: BrowserWindow): void {
   window.setSkipTaskbar(false);
   window.setFocusable(true);
 
-  void window.loadFile(path.join(__dirname, "../src/index.html"));
+  const rendererUrl = process.env.ELECTRON_RENDERER_URL;
+  if (rendererUrl) {
+    void window.loadURL(rendererUrl);
+    return;
+  }
+
+  void window.loadFile(path.join(__dirname, "../renderer/index.html"));
 }
 
 async function openOrStartFile(filePath: string): Promise<void> {
@@ -96,7 +102,7 @@ function createWindow(): BrowserWindow {
     height: 760,
     titleBarStyle: "hiddenInset",
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -124,7 +130,7 @@ function createAutomationWindow(): BrowserWindow {
     focusable: true,
     skipTaskbar: true,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     }

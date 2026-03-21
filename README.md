@@ -32,9 +32,19 @@ If no file is specified, it defaults to `README.md` in the current directory.
 
 ## Development
 
-Build the TypeScript code:
+Run with electron-vite (dev server + Electron):
+```bash
+npm run dev
+```
+
+Build production artifacts:
 ```bash
 npm run build
+```
+
+Type-check the TypeScript code:
+```bash
+npm run typecheck
 ```
 
 Run tests:
