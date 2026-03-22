@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import type { ViewerApi, RenderedDocument, SidebarApi } from "./contracts";
 import { AppBootstrap } from "./rendererBootstrap";
+import { SidebarResize } from "./sidebarResize";
 
 /**
  * Tests for AppBootstrap helper class that coordinates rendering flow.
@@ -46,31 +47,35 @@ describe("AppBootstrap", () => {
     };
 
     // Create mock DOM elements
-    mockDocumentBase = {
-      href: "./"
-    } as HTMLBaseElement;
+    mockDocumentBase = document.createElement("base");
+    mockDocumentBase.href = "./";
 
-    mockTocToggleButton = {
-      setAttribute: vi.fn(),
-      addEventListener: vi.fn()
-    } as unknown as HTMLButtonElement;
+    mockTocToggleButton = document.createElement("button");
 
-    mockTocSidebar = {
-      hidden: false
-    } as HTMLElement;
+    mockTocSidebar = document.createElement("aside");
+    const resizeHandle = document.createElement("div");
+    resizeHandle.className = "resize-handle";
+    mockTocSidebar.appendChild(resizeHandle);
+
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("fetches and renders initial document on start", async () => {
+    const mockSidebarResize = {
+      enable: vi.fn(),
+      disable: vi.fn(),
+    } as unknown as SidebarResize;
+
     const bootstrap = new AppBootstrap(
       mockViewerApi,
       mockHtmlRenderer as never,
       mockDocumentBase,
       mockTocToggleButton,
-      mockTocSidebar
+      mockTocSidebar,
+      mockSidebarResize
     );
 
     await bootstrap.start();
@@ -80,12 +85,18 @@ describe("AppBootstrap", () => {
   });
 
   it("subscribes to HTML updates on start", async () => {
+    const mockSidebarResize = {
+      enable: vi.fn(),
+      disable: vi.fn(),
+    } as unknown as SidebarResize;
+
     const bootstrap = new AppBootstrap(
       mockViewerApi,
       mockHtmlRenderer as never,
       mockDocumentBase,
       mockTocToggleButton,
-      mockTocSidebar
+      mockTocSidebar,
+      mockSidebarResize
     );
 
     await bootstrap.start();
@@ -100,12 +111,18 @@ describe("AppBootstrap", () => {
       return () => {};
     });
 
+    const mockSidebarResize = {
+      enable: vi.fn(),
+      disable: vi.fn(),
+    } as unknown as SidebarResize;
+
     const bootstrap = new AppBootstrap(
       mockViewerApi,
       mockHtmlRenderer as never,
       mockDocumentBase,
       mockTocToggleButton,
-      mockTocSidebar
+      mockTocSidebar,
+      mockSidebarResize
     );
     await bootstrap.start();
 
@@ -127,12 +144,18 @@ describe("AppBootstrap", () => {
       return () => {};
     });
 
+    const mockSidebarResize = {
+      enable: vi.fn(),
+      disable: vi.fn(),
+    } as unknown as SidebarResize;
+
     const bootstrap = new AppBootstrap(
       mockViewerApi,
       mockHtmlRenderer as never,
       mockDocumentBase,
       mockTocToggleButton,
-      mockTocSidebar
+      mockTocSidebar,
+      mockSidebarResize
     );
     await bootstrap.start();
 

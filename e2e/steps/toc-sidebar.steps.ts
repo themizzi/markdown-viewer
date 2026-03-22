@@ -75,7 +75,7 @@ async function clickTocMenuItem(browser: WebdriverIO.Browser): Promise<void> {
   await browser.electron.execute(createClickTocMenuItem());
 }
 
-async function ensureSidebarVisible(browser: WebdriverIO.Browser): Promise<void> {
+export async function ensureSidebarVisible(browser: WebdriverIO.Browser): Promise<void> {
   const sidebar = await browser.$('[data-testid="toc-sidebar"]');
   const isDisplayed = await sidebar.isDisplayed().catch(() => false);
 

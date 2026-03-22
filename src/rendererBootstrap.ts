@@ -1,11 +1,13 @@
 import type { MermaidApi, RenderedDocument, TableOfContentsItem, ViewerApi } from "./contracts";
 import { HtmlRenderer } from "./htmlRenderer";
 import { MermaidRenderer } from "./mermaidRenderer";
+import { SidebarResize } from "./sidebarResize";
 
 interface DomElements {
   baseHrefElement: HTMLBaseElement;
   tocToggleButton: HTMLButtonElement;
   tocSidebar: HTMLElement;
+  resizeHandle: HTMLElement;
 }
 
 function queryDomElements(): DomElements {
@@ -23,12 +25,17 @@ function queryDomElements(): DomElements {
     throw new Error("Missing table of contents sidebar");
   }
 
+  const resizeHandle = document.querySelector('[data-testid="resize-handle"]');
+  if (!(resizeHandle instanceof HTMLElement)) {
+    throw new Error("Missing resize handle");
+  }
+
   const baseHrefElement = document.getElementById("document-base");
   if (!(baseHrefElement instanceof HTMLBaseElement)) {
     throw new Error("Missing document base element");
   }
 
-  return { baseHrefElement, tocToggleButton, tocSidebar };
+  return { baseHrefElement, tocToggleButton, tocSidebar, resizeHandle };
 }
 
 export class AppBootstrap {
@@ -37,6 +44,7 @@ export class AppBootstrap {
   private readonly baseHrefElement: HTMLBaseElement;
   private readonly tocToggleButton: HTMLButtonElement;
   private readonly tocSidebar: HTMLElement;
+  private readonly sidebarResize: SidebarResize;
   private handleToggleClick: (() => void) | null = null;
 
   constructor(
@@ -44,13 +52,15 @@ export class AppBootstrap {
     htmlRenderer: HtmlRenderer,
     baseHrefElement: HTMLBaseElement,
     tocToggleButton: HTMLButtonElement,
-    tocSidebar: HTMLElement
+    tocSidebar: HTMLElement,
+    sidebarResize: SidebarResize
   ) {
     this.viewerApi = viewerApi;
     this.htmlRenderer = htmlRenderer;
     this.baseHrefElement = baseHrefElement;
     this.tocToggleButton = tocToggleButton;
     this.tocSidebar = tocSidebar;
+    this.sidebarResize = sidebarResize;
   }
 
   async start(): Promise<void> {
@@ -67,6 +77,7 @@ export class AppBootstrap {
       this.tocToggleButton.removeEventListener("click", this.handleToggleClick);
       this.handleToggleClick = null;
     }
+    this.sidebarResize.disable();
   }
 
   private async renderDocument(document: RenderedDocument): Promise<void> {
@@ -97,6 +108,8 @@ export class AppBootstrap {
   }
 
   private renderToc(items: TableOfContentsItem[]): void {
+    const resizeHandle = this.tocSidebar.querySelector('.resize-handle');
+    
     const nav = document.createElement("nav");
     nav.className = "toc-nav";
     const ul = document.createElement("ul");
@@ -115,6 +128,9 @@ export class AppBootstrap {
     nav.appendChild(ul);
     this.tocSidebar.innerHTML = "";
     this.tocSidebar.appendChild(nav);
+    if (resizeHandle) {
+      this.tocSidebar.appendChild(resizeHandle);
+    }
 
     this.tocSidebar.querySelectorAll(".toc-list a").forEach((link) => {
       link.addEventListener("click", (event) => {
@@ -131,7 +147,11 @@ export class AppBootstrap {
   }
 
   private clearToc(): void {
+    const resizeHandle = this.tocSidebar.querySelector('.resize-handle');
     this.tocSidebar.innerHTML = '<p class="sidebar-empty">No table of contents available.</p>';
+    if (resizeHandle) {
+      this.tocSidebar.appendChild(resizeHandle);
+    }
   }
 
   private applySidebarVisibility(visible: boolean): void {
@@ -140,6 +160,8 @@ export class AppBootstrap {
   }
 
   private async initSidebar(): Promise<void> {
+    this.sidebarResize.enable();
+
     const initialVisibility = await this.viewerApi.sidebar.getInitialVisibility();
     this.applySidebarVisibility(initialVisibility);
 
@@ -155,12 +177,18 @@ export class AppBootstrap {
 }
 
 export function createApp(viewerApi: ViewerApi, mermaid: MermaidApi): AppBootstrap {
-  const { baseHrefElement, tocToggleButton, tocSidebar } = queryDomElements();
+  const { baseHrefElement, tocToggleButton, tocSidebar, resizeHandle } = queryDomElements();
 
   const mermaidRenderer = new MermaidRenderer(mermaid);
   mermaidRenderer.initialize();
 
   const htmlRenderer = new HtmlRenderer("app", [mermaidRenderer]);
 
-  return new AppBootstrap(viewerApi, htmlRenderer, baseHrefElement, tocToggleButton, tocSidebar);
+  const sidebarResize = new SidebarResize(tocSidebar, resizeHandle, (collapsed: boolean) => {
+    if (collapsed && !tocSidebar.hidden) {
+      void viewerApi.sidebar.requestToggleSidebar();
+    }
+  });
+
+  return new AppBootstrap(viewerApi, htmlRenderer, baseHrefElement, tocToggleButton, tocSidebar, sidebarResize);
 }
