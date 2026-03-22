@@ -39,11 +39,15 @@ Use this skill when you need to process code review comments on a pull request a
 ### 1) Load all review threads and comments
 
 ```bash
-gh api graphql -f query='query($owner:String!, $repo:String!, $number:Int!) {
+gh api graphql -f query='query($owner:String!, $repo:String!, $number:Int!, $cursor:String) {
   repository(owner:$owner, name:$repo) {
     pullRequest(number:$number) {
       id
-      reviewThreads(first:100) {
+      reviewThreads(first:100, after:$cursor) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           isResolved
@@ -51,8 +55,13 @@ gh api graphql -f query='query($owner:String!, $repo:String!, $number:Int!) {
           path
           line
           comments(first:20) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
             nodes {
               id
+              databaseId
               body
               url
               author { login }
@@ -62,10 +71,15 @@ gh api graphql -f query='query($owner:String!, $repo:String!, $number:Int!) {
       }
     }
   }
-}' -f owner=OWNER -f repo=REPO -F number=PR
+}' -f owner=OWNER -f repo=REPO -F number=123
 ```
 
-Track each unresolved thread ID (`PRRT_...`) and the root review comment ID (`PRRC_...`).
+Track each unresolved thread ID (`PRRT_...`) and each review comment's numeric `databaseId`.
+
+Pagination notes:
+- `reviewThreads(first:100)` is not enough for very large PRs.
+- Continue querying with `-f cursor=<endCursor>` while `pageInfo.hasNextPage` is true.
+- If a thread has `comments.pageInfo.hasNextPage=true`, fetch additional comments for that thread before replying.
 
 ### 2) Implement requested fixes
 
@@ -83,7 +97,8 @@ gh api repos/OWNER/REPO/pulls/PR/comments/COMMENT_ID/replies \
 ```
 
 Notes:
-- Use the numeric `COMMENT_ID` from REST (`gh api repos/.../pulls/PR/comments`).
+- Use numeric `COMMENT_ID`.
+- You can get numeric IDs from GraphQL `databaseId` in step 1, or from REST (`gh api repos/.../pulls/PR/comments`).
 - Reply once per thread unless additional clarification is needed.
 
 ### 4) Resolve each review thread (GraphQL)
@@ -104,10 +119,14 @@ gh api graphql -f query='mutation($threadId:ID!) {
 ### 5) Verify all threads are resolved
 
 ```bash
-gh api graphql -f query='query($owner:String!, $repo:String!, $number:Int!) {
+gh api graphql -f query='query($owner:String!, $repo:String!, $number:Int!, $cursor:String) {
   repository(owner:$owner, name:$repo) {
     pullRequest(number:$number) {
-      reviewThreads(first:100) {
+      reviewThreads(first:100, after:$cursor) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           path
@@ -116,7 +135,7 @@ gh api graphql -f query='query($owner:String!, $repo:String!, $number:Int!) {
       }
     }
   }
-}' -f owner=OWNER -f repo=REPO -F number=PR
+}' -f owner=OWNER -f repo=REPO -F number=123
 ```
 
 Expected: every addressed thread shows `isResolved: true`.
