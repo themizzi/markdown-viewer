@@ -7,6 +7,8 @@ export class SidebarResize {
   private isDragging = false;
   private dragStartX = 0;
   private dragStartWidth = 0;
+  private previousBodyCursor = "";
+  private previousBodyUserSelect = "";
   private readonly boundMouseMove: (e: MouseEvent) => void;
   private readonly boundMouseUp: () => void;
 
@@ -69,7 +71,9 @@ export class SidebarResize {
   }
 
   private constrainWidth(width: number): number {
-    return Math.max(this.getMinWidth(), Math.min(width, this.getMaxWidth()));
+    const minWidth = this.getMinWidth();
+    const maxWidth = Math.max(minWidth, this.getMaxWidth());
+    return Math.max(minWidth, Math.min(width, maxWidth));
   }
 
   private handleMouseDown = (event: MouseEvent): void => {
@@ -83,7 +87,9 @@ export class SidebarResize {
     this.dragStartWidth = this.getWidth();
 
     this.resizeHandle.classList.add("dragging");
-    document.body.style.cursor = "col-resize";
+    this.previousBodyCursor = document.body.style.cursor;
+    this.previousBodyUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = "grabbing";
     document.body.style.userSelect = "none";
 
     window.addEventListener("mousemove", this.boundMouseMove);
@@ -105,8 +111,8 @@ export class SidebarResize {
 
     this.isDragging = false;
     this.resizeHandle.classList.remove("dragging");
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
+    document.body.style.cursor = this.previousBodyCursor;
+    document.body.style.userSelect = this.previousBodyUserSelect;
 
     window.removeEventListener("mousemove", this.boundMouseMove);
     window.removeEventListener("mouseup", this.boundMouseUp);

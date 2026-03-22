@@ -57,12 +57,10 @@ describe("AppBootstrap", () => {
     resizeHandle.className = "resize-handle";
     mockTocSidebar.appendChild(resizeHandle);
 
-    vi.spyOn(SidebarResize.prototype, 'enable').mockReturnValue();
-    vi.spyOn(SidebarResize.prototype, 'disable').mockReturnValue();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("fetches and renders initial document on start", async () => {

@@ -1,17 +1,14 @@
 import { When, Given, Then } from "@cucumber/cucumber";
 import { expect } from "expect-webdriverio";
 import type { E2EWorld } from "../support/world.ts";
-import { openFileViaDialog } from "../support/macOpenFileDialog.ts";
 import { ensureSidebarVisible } from "./toc-sidebar.steps.ts";
+import "./open-file.steps.ts";
 
 Given(/the initial test markdown document is loaded for resize testing/, async function (this: E2EWorld) {
-  await openFileViaDialog("test.md");
-
   const browser = this.getBrowser();
-  await browser.waitUntil(async () => {
-    const heading = await browser.$("h1");
-    return heading.isExisting();
-  }, { timeout: 10000 });
+  const appElement = await browser.$("#app");
+  const text = await appElement.getText();
+  expect(text).toContain("OPEN_FILE_INITIAL_FIXTURE");
 });
 
 Given("the TOC sidebar is visible for resizing", async function (this: E2EWorld) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SidebarResize } from './sidebarResize';
 
 describe('SidebarResize', () => {
@@ -7,6 +7,8 @@ describe('SidebarResize', () => {
   let onCollapse: (collapsed: boolean) => void;
 
   beforeEach(() => {
+    document.body.innerHTML = '';
+
     sidebar = document.createElement('div');
     sidebar.style.width = '240px';
     document.body.appendChild(sidebar);
@@ -15,6 +17,10 @@ describe('SidebarResize', () => {
     document.body.appendChild(resizeHandle);
 
     onCollapse = vi.fn();
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
   });
 
   describe('getMinWidth', () => {

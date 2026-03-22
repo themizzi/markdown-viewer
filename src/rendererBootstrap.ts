@@ -185,7 +185,7 @@ export function createApp(viewerApi: ViewerApi, mermaid: MermaidApi): AppBootstr
   const htmlRenderer = new HtmlRenderer("app", [mermaidRenderer]);
 
   const sidebarResize = new SidebarResize(tocSidebar, resizeHandle, (collapsed: boolean) => {
-    if (collapsed) {
+    if (collapsed && !tocSidebar.hidden) {
       void viewerApi.sidebar.requestToggleSidebar();
     }
   });
