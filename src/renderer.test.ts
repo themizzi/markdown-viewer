@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import type { ViewerApi, RenderedDocument, SidebarApi } from "./contracts";
+import type { ViewerApi, RenderedDocument, SidebarApi, FullscreenApi } from "./contracts";
 import { AppBootstrap } from "./rendererBootstrap";
 
 /**
@@ -36,13 +36,19 @@ describe("AppBootstrap", () => {
       onVisibilityChanged: vi.fn().mockReturnValue(() => {})
     };
 
+    const mockFullscreenApi: FullscreenApi = {
+      getInitialState: vi.fn().mockResolvedValue(false),
+      onStateChanged: vi.fn().mockReturnValue(() => {})
+    };
+
     mockViewerApi = {
       getHtml: vi.fn().mockResolvedValue({
         html: "<h1>Initial HTML</h1>",
         baseHref: "./"
       } as RenderedDocument),
       onHtmlUpdated: vi.fn().mockReturnValue(() => {}),
-      sidebar: mockSidebarApi
+      sidebar: mockSidebarApi,
+      fullscreen: mockFullscreenApi
     };
 
     // Create mock DOM elements

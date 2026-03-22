@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { RenderedDocument, SidebarApi } from "./contracts";
+import type { RenderedDocument, SidebarApi, FullscreenApi } from "./contracts";
 
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
@@ -7,6 +7,8 @@ const IPC_OPEN_FILE = "viewer:open-file";
 const IPC_SIDEBAR_GET_INITIAL_VISIBILITY = "sidebar:get-initial-visibility";
 const IPC_SIDEBAR_REQUEST_TOGGLE = "sidebar:request-toggle";
 const IPC_SIDEBAR_VISIBILITY_CHANGED = "sidebar:visibility-changed";
+const IPC_FULLSCREEN_GET_INITIAL_STATE = "viewer:fullscreen-get-initial-state";
+const IPC_FULLSCREEN_CHANGED = "viewer:fullscreen-changed";
 
 const api = {
   getHtml: (): Promise<RenderedDocument> => ipcRenderer.invoke(IPC_GET_HTML),
@@ -29,7 +31,18 @@ const api = {
         ipcRenderer.removeListener(IPC_SIDEBAR_VISIBILITY_CHANGED, listener);
       };
     }
-  } as SidebarApi
+  } as SidebarApi,
+  fullscreen: {
+    getInitialState: (): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_FULLSCREEN_GET_INITIAL_STATE),
+    onStateChanged: (callback: (isFullscreen: boolean) => void): (() => void) => {
+      const listener = (_event: unknown, isFullscreen: boolean): void => callback(isFullscreen);
+      ipcRenderer.on(IPC_FULLSCREEN_CHANGED, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_FULLSCREEN_CHANGED, listener);
+      };
+    }
+  } as FullscreenApi
 };
 
 // Only expose file open in dev/test builds

@@ -18,6 +18,8 @@ import type { SidebarVisibility } from "./sidebarVisibility";
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
 const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
+const IPC_FULLSCREEN_GET_INITIAL_STATE = "viewer:fullscreen-get-initial-state";
+const IPC_FULLSCREEN_CHANGED = "viewer:fullscreen-changed";
 
 let mainWindow: BrowserWindow | null = null;
 let automationWindow: BrowserWindow | null = null;
@@ -117,9 +119,23 @@ function createWindow(): BrowserWindow {
     }
   });
 
+  registerFullscreenListeners(window);
+
   configureViewerWindow(window);
 
   return window;
+}
+
+function registerFullscreenListeners(window: BrowserWindow): void {
+  if (process.platform === "darwin") {
+    window.on("enter-full-screen", () => {
+      window.webContents.send(IPC_FULLSCREEN_CHANGED, true);
+    });
+
+    window.on("leave-full-screen", () => {
+      window.webContents.send(IPC_FULLSCREEN_CHANGED, false);
+    });
+  }
 }
 
 function shouldCreateAutomationWindow(argv: string[]): boolean {
@@ -158,6 +174,7 @@ function ensureViewerWindow(): BrowserWindow {
     mainWindow = automationWindow;
     automationWindow = null;
     configureViewerWindow(mainWindow);
+    registerFullscreenListeners(mainWindow);
     setMainWindow(mainWindow);
     return mainWindow;
   }
@@ -171,6 +188,10 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
     html: "<p>Loading...</p>",
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  });
+
+  ipcMain.handle(IPC_FULLSCREEN_GET_INITIAL_STATE, () => {
+    return mainWindow?.isFullScreen() ?? false;
   });
 
   if (!app.isPackaged) {
