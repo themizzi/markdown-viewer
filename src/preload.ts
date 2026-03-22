@@ -17,13 +17,25 @@ const commands: CommandShortcuts = {
   toggleTocDescription: COMMANDS.toggleToc.description
 };
 
+const fullscreenApi: FullscreenApi = {
+  getInitialState: (): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_FULLSCREEN_GET_INITIAL_STATE),
+  onStateChanged: (callback: (isFullscreen: boolean) => void): (() => void) => {
+    const listener = (_event: unknown, isFullscreen: boolean): void => callback(isFullscreen);
+    ipcRenderer.on(IPC_FULLSCREEN_CHANGED, listener);
+    return () => {
+      ipcRenderer.removeListener(IPC_FULLSCREEN_CHANGED, listener);
+    };
+  }
+};
+
 const api: {
   getHtml: () => Promise<RenderedDocument>;
   onHtmlUpdated: (handler: (document: RenderedDocument) => void) => () => void;
   sidebar: SidebarApi;
   commands: CommandShortcuts;
   toggleToc: () => Promise<void>;
-  fullscreen: FullscreenApi;
+  fullscreen?: FullscreenApi;
   openFile?: (filePath: string) => Promise<{ success: boolean; error?: string }>;
 } = {
   getHtml: (): Promise<RenderedDocument> => ipcRenderer.invoke(IPC_GET_HTML),
@@ -48,19 +60,12 @@ const api: {
       };
     }
   } as SidebarApi,
-  fullscreen: {
-    getInitialState: (): Promise<boolean> =>
-      ipcRenderer.invoke(IPC_FULLSCREEN_GET_INITIAL_STATE),
-    onStateChanged: (callback: (isFullscreen: boolean) => void): (() => void) => {
-      const listener = (_event: unknown, isFullscreen: boolean): void => callback(isFullscreen);
-      ipcRenderer.on(IPC_FULLSCREEN_CHANGED, listener);
-      return () => {
-        ipcRenderer.removeListener(IPC_FULLSCREEN_CHANGED, listener);
-      };
-    }
-  } as FullscreenApi,
   commands
 };
+
+if (process.platform === "darwin") {
+  api.fullscreen = fullscreenApi;
+}
 
 // Only expose file open in dev/test builds
 if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {

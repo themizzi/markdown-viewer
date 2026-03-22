@@ -39,14 +39,21 @@ async function setFullscreenState(browser: WebdriverIO.Browser, isFullscreen: bo
       }
     }, isFullscreen);
 
-    await browser.waitUntil(async () => {
-      const state = await getFullscreenState(browser);
-      return state === isFullscreen;
-    }, {
-      timeout: 5000,
-      interval: 100,
-      timeoutMsg: `Timed out waiting for fullscreen=${isFullscreen} (attempt ${attempt})`
-    });
+    try {
+      await browser.waitUntil(async () => {
+        const state = await getFullscreenState(browser);
+        return state === isFullscreen;
+      }, {
+        timeout: 5000,
+        interval: 100,
+        timeoutMsg: `Timed out waiting for fullscreen=${isFullscreen} (attempt ${attempt})`
+      });
+    } catch {
+      if (attempt < 3) {
+        continue;
+      }
+      throw new Error(`Unable to reach fullscreen=${isFullscreen} after retries`);
+    }
 
     await browser.pause(400);
     const stableState = await getFullscreenState(browser);

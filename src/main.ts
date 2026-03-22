@@ -212,8 +212,9 @@ function registerIpcHandlers(): void {
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
   });
 
-  ipcMain.handle(IPC_FULLSCREEN_GET_INITIAL_STATE, () => {
-    return mainWindow?.isFullScreen() ?? false;
+  ipcMain.handle(IPC_FULLSCREEN_GET_INITIAL_STATE, (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    return window?.isFullScreen() ?? false;
   });
   
   ipcMain.handle(IPC_TOGGLE_TOC, async () => {

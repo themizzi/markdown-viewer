@@ -91,7 +91,7 @@ export class AppBootstrap {
   }
 
   private async initFullscreen(): Promise<void> {
-    if (!this.viewerApi.fullscreen) {
+    if (!document.documentElement.classList.contains("platform-macos") || !this.viewerApi.fullscreen) {
       return;
     }
     const initialState = await this.viewerApi.fullscreen.getInitialState();
