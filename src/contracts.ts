@@ -31,11 +31,17 @@ export interface MermaidApi {
   run(options?: Record<string, unknown>): Promise<void> | void;
 }
 
+export interface CommandShortcuts {
+  toggleTocShortcut: string;
+  toggleTocDescription: string;
+}
+
 export interface ViewerApi {
   getHtml(): Promise<RenderedDocument>;
   onHtmlUpdated(handler: (document: RenderedDocument) => void): () => void;
   sidebar: SidebarApi;
   fullscreen: FullscreenApi;
+  commands?: CommandShortcuts;
 }
 
 export interface DiagramRenderer {

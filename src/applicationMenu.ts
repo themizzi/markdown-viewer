@@ -1,4 +1,5 @@
 import { Menu, MenuItemConstructorOptions, app, shell } from "electron";
+import { COMMANDS } from "./commands";
 
 function createViewSubmenu(onToggleToc: () => void): MenuItemConstructorOptions[] {
   return [
@@ -14,6 +15,7 @@ function createViewSubmenu(onToggleToc: () => void): MenuItemConstructorOptions[
     { type: "separator" as const },
     {
       label: "Show Table of Contents",
+      accelerator: COMMANDS.toggleToc.shortcut,
       id: "view-toggle-table-of-contents",
       type: "checkbox" as const,
       checked: false,

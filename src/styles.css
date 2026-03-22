@@ -113,16 +113,38 @@ body {
 
 /* Sidebar Styling */
 .toc-sidebar {
+  position: relative;
   width: var(--sidebar-width);
+  flex-shrink: 0;
   background: var(--color-bg-sidebar);
   border-right: 1px solid var(--color-border);
   padding: var(--spacing-lg);
   overflow-y: auto;
-  min-width: var(--sidebar-width);
+  box-sizing: border-box;
 }
 
 .toc-sidebar[hidden] {
   display: none;
+}
+
+.resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.resize-handle:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.resize-handle.dragging {
+  cursor: grabbing;
 }
 
 .sidebar-title {

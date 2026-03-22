@@ -43,5 +43,11 @@ export default tseslint.config(
         ...globals.node
       }
     }
+  },
+  {
+    files: ['**/*.{ts,js,cjs,mjs}'],
+    rules: {
+      'eol-last': ['error', 'always']
+    }
   }
 );
