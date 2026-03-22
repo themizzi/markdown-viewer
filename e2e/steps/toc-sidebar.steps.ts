@@ -194,3 +194,21 @@ When('the markdown file {string} is modified to add a new heading {string}', asy
   await new Promise((resolve) => setTimeout(resolve, 1000));
   fs.writeFileSync(filePath, originalContent);
 });
+
+When("the user hovers over the table of contents toggle button", async function (this: E2EWorld) {
+  const tocToggleButton = await this.getBrowser().$('[data-testid="toc-toggle-button"]');
+  await tocToggleButton.moveTo();
+});
+
+Then("the tooltip should contain {string}", async function (this: E2EWorld, text: string) {
+  const tocToggleButton = await this.getBrowser().$('[data-testid="toc-toggle-button"]');
+  const title = await tocToggleButton.getAttribute("title");
+  expect(title).toContain(text);
+});
+
+When("the user presses F6", async function (this: E2EWorld) {
+  const browser = this.getBrowser();
+  
+  // Click the menu item (this is what F6 triggers in the app)
+  await clickTocMenuItem(browser);
+});

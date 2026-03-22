@@ -9,6 +9,7 @@ import { FileWatcherService } from "./fileWatcher";
 import { MarkedMarkdownService } from "./markdownService";
 import { ViewerController } from "./viewerController";
 import { createApplicationMenu } from "./applicationMenu";
+import { COMMANDS } from "./commands";
 import { showOpenFileDialog } from "./openFileDialog";
 import { openFileFlow } from "./openFileFlow";
 import { resolveStartupFile } from "./startupOpenBehavior";
@@ -18,11 +19,37 @@ import type { SidebarVisibility } from "./sidebarVisibility";
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
 const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
+const IPC_TOGGLE_TOC = "viewer:toggle-toc";  // For triggering TOC toggle
 
 let mainWindow: BrowserWindow | null = null;
 let automationWindow: BrowserWindow | null = null;
 let controller: ViewerController | null = null;
 let sidebarVisibility: SidebarVisibility | undefined = undefined;
+
+function executeCommand(command: string): void {
+  switch (command) {
+    case "toggle-toc":
+      sidebarVisibility?.toggle();
+      break;
+    case "open-file":
+      void handleOpenRequest().catch((error) => {
+        console.error("Failed to open file:", error);
+      });
+      break;
+  }
+}
+
+function installBeforeInputEventHandler(window: BrowserWindow): void {
+  interface Input {
+    type: string;
+    key: string;
+  }
+  window.webContents.on("before-input-event", (_event, input: Input) => {
+    if (input.key === COMMANDS.toggleToc.shortcut && input.type === "keyDown") {
+      executeCommand("toggle-toc");
+    }
+  });
+}
 
 function configureViewerWindow(window: BrowserWindow): void {
   window.setSize(1000, 760);
@@ -90,14 +117,8 @@ async function handleOpenRequest(): Promise<void> {
 
 function installApplicationMenu(): void {
   const menu = createApplicationMenu(
-    () => {
-      void handleOpenRequest().catch((error) => {
-        console.error("Failed to open file:", error);
-      });
-    },
-    () => {
-      sidebarVisibility?.toggle();
-    }
+    () => executeCommand("open-file"),
+    () => executeCommand("toggle-toc")
   );
 
   Menu.setApplicationMenu(menu);
@@ -118,6 +139,7 @@ function createWindow(): BrowserWindow {
   });
 
   configureViewerWindow(window);
+  installBeforeInputEventHandler(window);
 
   return window;
 }
@@ -171,6 +193,11 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_GET_HTML, async () => controller?.getHtml() ?? {
     html: "<p>Loading...</p>",
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
+  });
+
+  ipcMain.handle(IPC_TOGGLE_TOC, async () => {
+    executeCommand("toggle-toc");
+    return { success: true };
   });
 
   if (!app.isPackaged) {
