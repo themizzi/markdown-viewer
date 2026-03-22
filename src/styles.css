@@ -65,6 +65,10 @@ body {
   padding-left: var(--macos-traffic-light-offset);
 }
 
+.platform-macos.is-fullscreen .toolbar {
+  padding-left: 0;
+}
+
 .toolbar {
   display: flex;
   gap: var(--spacing-sm);

@@ -46,6 +46,7 @@ export class AppBootstrap {
   private readonly tocSidebar: HTMLElement;
   private readonly sidebarResize: SidebarResize;
   private handleToggleClick: (() => void) | null = null;
+  private cleanupFullscreen: (() => void) | null = null;
 
   constructor(
     viewerApi: ViewerApi,
@@ -65,6 +66,7 @@ export class AppBootstrap {
 
   async start(): Promise<void> {
     await this.initSidebar();
+    await this.initFullscreen();
     const initialDocument = await this.viewerApi.getHtml();
     await this.renderDocument(initialDocument);
     this.viewerApi.onHtmlUpdated((nextDocument) => {
@@ -77,7 +79,27 @@ export class AppBootstrap {
       this.tocToggleButton.removeEventListener("click", this.handleToggleClick);
       this.handleToggleClick = null;
     }
+    if (this.cleanupFullscreen) {
+      this.cleanupFullscreen();
+      this.cleanupFullscreen = null;
+    }
     this.sidebarResize.disable();
+  }
+
+  private applyFullscreenState(isFullscreen: boolean): void {
+    document.documentElement.classList.toggle("is-fullscreen", isFullscreen);
+  }
+
+  private async initFullscreen(): Promise<void> {
+    if (!document.documentElement.classList.contains("platform-macos") || !this.viewerApi.fullscreen) {
+      return;
+    }
+    const initialState = await this.viewerApi.fullscreen.getInitialState();
+    this.applyFullscreenState(initialState);
+
+    this.cleanupFullscreen = this.viewerApi.fullscreen.onStateChanged((isFullscreen) => {
+      this.applyFullscreenState(isFullscreen);
+    });
   }
 
   private async renderDocument(document: RenderedDocument): Promise<void> {

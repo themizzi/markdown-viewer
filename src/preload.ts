@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { CommandShortcuts, RenderedDocument, SidebarApi } from "./contracts";
+import type { CommandShortcuts, RenderedDocument, FullscreenApi, SidebarApi } from "./contracts";
 import { COMMANDS } from "./commands";
 
 const IPC_GET_HTML = "viewer:get-html";
@@ -9,10 +9,24 @@ const IPC_TOGGLE_TOC = "viewer:toggle-toc";
 const IPC_SIDEBAR_GET_INITIAL_VISIBILITY = "sidebar:get-initial-visibility";
 const IPC_SIDEBAR_REQUEST_TOGGLE = "sidebar:request-toggle";
 const IPC_SIDEBAR_VISIBILITY_CHANGED = "sidebar:visibility-changed";
+const IPC_FULLSCREEN_GET_INITIAL_STATE = "viewer:fullscreen-get-initial-state";
+const IPC_FULLSCREEN_CHANGED = "viewer:fullscreen-changed";
 
 const commands: CommandShortcuts = {
   toggleTocShortcut: COMMANDS.toggleToc.shortcut,
   toggleTocDescription: COMMANDS.toggleToc.description
+};
+
+const fullscreenApi: FullscreenApi = {
+  getInitialState: (): Promise<boolean> =>
+    ipcRenderer.invoke(IPC_FULLSCREEN_GET_INITIAL_STATE),
+  onStateChanged: (callback: (isFullscreen: boolean) => void): (() => void) => {
+    const listener = (_event: unknown, isFullscreen: boolean): void => callback(isFullscreen);
+    ipcRenderer.on(IPC_FULLSCREEN_CHANGED, listener);
+    return () => {
+      ipcRenderer.removeListener(IPC_FULLSCREEN_CHANGED, listener);
+    };
+  }
 };
 
 const api: {
@@ -21,6 +35,7 @@ const api: {
   sidebar: SidebarApi;
   commands: CommandShortcuts;
   toggleToc: () => Promise<void>;
+  fullscreen?: FullscreenApi;
   openFile?: (filePath: string) => Promise<{ success: boolean; error?: string }>;
 } = {
   getHtml: (): Promise<RenderedDocument> => ipcRenderer.invoke(IPC_GET_HTML),
@@ -47,6 +62,10 @@ const api: {
   } as SidebarApi,
   commands
 };
+
+if (process.platform === "darwin") {
+  api.fullscreen = fullscreenApi;
+}
 
 // Only expose file open in dev/test builds
 if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {

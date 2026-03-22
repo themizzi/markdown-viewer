@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import type { ViewerApi, RenderedDocument, SidebarApi } from "./contracts";
+import type { ViewerApi, RenderedDocument, SidebarApi, FullscreenApi } from "./contracts";
 import { AppBootstrap } from "./rendererBootstrap";
 import { SidebarResize } from "./sidebarResize";
 
@@ -37,13 +37,19 @@ describe("AppBootstrap", () => {
       onVisibilityChanged: vi.fn().mockReturnValue(() => {})
     };
 
+    const mockFullscreenApi: FullscreenApi = {
+      getInitialState: vi.fn().mockResolvedValue(false),
+      onStateChanged: vi.fn().mockReturnValue(() => {})
+    };
+
     mockViewerApi = {
       getHtml: vi.fn().mockResolvedValue({
         html: "<h1>Initial HTML</h1>",
         baseHref: "./"
       } as RenderedDocument),
       onHtmlUpdated: vi.fn().mockReturnValue(() => {}),
-      sidebar: mockSidebarApi
+      sidebar: mockSidebarApi,
+      fullscreen: mockFullscreenApi
     };
 
     // Create mock DOM elements
@@ -166,5 +172,78 @@ describe("AppBootstrap", () => {
 
     const calls = vi.mocked(renderSpy).mock.calls;
     expect(calls.length).toBeGreaterThanOrEqual(4); // Initial + 3 updates
+  });
+
+  it("applies initial fullscreen state on macOS", async () => {
+    document.documentElement.classList.add("platform-macos");
+    const onStateChangedUnsubscribe = vi.fn();
+    const onStateChanged = vi.fn().mockReturnValue(onStateChangedUnsubscribe);
+    const getInitialState = vi.fn().mockResolvedValue(true);
+
+    mockViewerApi.fullscreen = {
+      getInitialState,
+      onStateChanged
+    };
+
+    const mockSidebarResize = {
+      enable: vi.fn(),
+      disable: vi.fn(),
+    } as unknown as SidebarResize;
+
+    const bootstrap = new AppBootstrap(
+      mockViewerApi,
+      mockHtmlRenderer as never,
+      mockDocumentBase,
+      mockTocToggleButton,
+      mockTocSidebar,
+      mockSidebarResize
+    );
+
+    await bootstrap.start();
+
+    expect(getInitialState).toHaveBeenCalled();
+    expect(document.documentElement.classList.contains("is-fullscreen")).toBe(true);
+    bootstrap.destroy();
+  });
+
+  it("updates fullscreen class on state changes and unsubscribes on destroy", async () => {
+    document.documentElement.classList.add("platform-macos");
+    let fullscreenHandler: ((isFullscreen: boolean) => void) | null = null;
+    const unsubscribe = vi.fn();
+
+    mockViewerApi.fullscreen = {
+      getInitialState: vi.fn().mockResolvedValue(false),
+      onStateChanged: vi.fn().mockImplementation((handler) => {
+        fullscreenHandler = handler;
+        return unsubscribe;
+      })
+    };
+
+    const mockSidebarResize = {
+      enable: vi.fn(),
+      disable: vi.fn(),
+    } as unknown as SidebarResize;
+
+    const bootstrap = new AppBootstrap(
+      mockViewerApi,
+      mockHtmlRenderer as never,
+      mockDocumentBase,
+      mockTocToggleButton,
+      mockTocSidebar,
+      mockSidebarResize
+    );
+
+    await bootstrap.start();
+    expect(document.documentElement.classList.contains("is-fullscreen")).toBe(false);
+
+    expect(fullscreenHandler).not.toBeNull();
+    fullscreenHandler!(true);
+    expect(document.documentElement.classList.contains("is-fullscreen")).toBe(true);
+
+    fullscreenHandler!(false);
+    expect(document.documentElement.classList.contains("is-fullscreen")).toBe(false);
+
+    bootstrap.destroy();
+    expect(unsubscribe).toHaveBeenCalled();
   });
 });

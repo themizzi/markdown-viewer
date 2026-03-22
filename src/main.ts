@@ -19,6 +19,8 @@ import type { SidebarVisibility } from "./sidebarVisibility";
 const IPC_GET_HTML = "viewer:get-html";
 const IPC_HTML_UPDATED = "viewer:html-updated";
 const IPC_OPEN_FILE = "viewer:open-file";  // For e2e testing
+const IPC_FULLSCREEN_GET_INITIAL_STATE = "viewer:fullscreen-get-initial-state";
+const IPC_FULLSCREEN_CHANGED = "viewer:fullscreen-changed";
 const IPC_TOGGLE_TOC = "viewer:toggle-toc";  // For triggering TOC toggle
 
 let mainWindow: BrowserWindow | null = null;
@@ -138,10 +140,24 @@ function createWindow(): BrowserWindow {
     }
   });
 
+  registerFullscreenListeners(window);
+
   configureViewerWindow(window);
   installBeforeInputEventHandler(window);
 
   return window;
+}
+
+function registerFullscreenListeners(window: BrowserWindow): void {
+  if (process.platform === "darwin") {
+    window.on("enter-full-screen", () => {
+      window.webContents.send(IPC_FULLSCREEN_CHANGED, true);
+    });
+
+    window.on("leave-full-screen", () => {
+      window.webContents.send(IPC_FULLSCREEN_CHANGED, false);
+    });
+  }
 }
 
 function shouldCreateAutomationWindow(argv: string[]): boolean {
@@ -180,6 +196,7 @@ function ensureViewerWindow(): BrowserWindow {
     mainWindow = automationWindow;
     automationWindow = null;
     configureViewerWindow(mainWindow);
+    registerFullscreenListeners(mainWindow);
     setMainWindow(mainWindow);
     return mainWindow;
   }
@@ -195,6 +212,11 @@ function registerIpcHandlers(): void {
     baseHref: pathToFileURL(`${process.cwd()}${path.sep}`).href,
   });
 
+  ipcMain.handle(IPC_FULLSCREEN_GET_INITIAL_STATE, (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    return window?.isFullScreen() ?? false;
+  });
+  
   ipcMain.handle(IPC_TOGGLE_TOC, async () => {
     executeCommand("toggle-toc");
     return { success: true };

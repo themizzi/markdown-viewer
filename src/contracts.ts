@@ -40,7 +40,9 @@ export interface ViewerApi {
   getHtml(): Promise<RenderedDocument>;
   onHtmlUpdated(handler: (document: RenderedDocument) => void): () => void;
   sidebar: SidebarApi;
+  fullscreen?: FullscreenApi;
   commands?: CommandShortcuts;
+  toggleToc?: () => Promise<void>;
 }
 
 export interface DiagramRenderer {
@@ -52,4 +54,9 @@ export interface SidebarApi {
   getInitialVisibility(): Promise<boolean>;
   requestToggleSidebar(): Promise<void>;
   onVisibilityChanged(callback: (visible: boolean) => void): () => void;
+}
+
+export interface FullscreenApi {
+  getInitialState(): Promise<boolean>;
+  onStateChanged(callback: (isFullscreen: boolean) => void): () => void;
 }
