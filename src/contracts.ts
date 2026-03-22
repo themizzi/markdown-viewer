@@ -40,8 +40,9 @@ export interface ViewerApi {
   getHtml(): Promise<RenderedDocument>;
   onHtmlUpdated(handler: (document: RenderedDocument) => void): () => void;
   sidebar: SidebarApi;
-  fullscreen: FullscreenApi;
+  fullscreen?: FullscreenApi;
   commands?: CommandShortcuts;
+  toggleToc?: () => Promise<void>;
 }
 
 export interface DiagramRenderer {

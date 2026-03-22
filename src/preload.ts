@@ -23,6 +23,7 @@ const api: {
   sidebar: SidebarApi;
   commands: CommandShortcuts;
   toggleToc: () => Promise<void>;
+  fullscreen: FullscreenApi;
   openFile?: (filePath: string) => Promise<{ success: boolean; error?: string }>;
 } = {
   getHtml: (): Promise<RenderedDocument> => ipcRenderer.invoke(IPC_GET_HTML),

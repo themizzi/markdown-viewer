@@ -90,6 +90,9 @@ export class AppBootstrap {
   }
 
   private async initFullscreen(): Promise<void> {
+    if (!this.viewerApi.fullscreen) {
+      return;
+    }
     const initialState = await this.viewerApi.fullscreen.getInitialState();
     this.applyFullscreenState(initialState);
 
