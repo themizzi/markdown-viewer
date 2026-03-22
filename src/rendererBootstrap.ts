@@ -83,6 +83,7 @@ export class AppBootstrap {
       this.cleanupFullscreen();
       this.cleanupFullscreen = null;
     }
+    this.sidebarResize.disable();
   }
 
   private applyFullscreenState(isFullscreen: boolean): void {
@@ -99,7 +100,6 @@ export class AppBootstrap {
     this.cleanupFullscreen = this.viewerApi.fullscreen.onStateChanged((isFullscreen) => {
       this.applyFullscreenState(isFullscreen);
     });
-    this.sidebarResize.disable();
   }
 
   private async renderDocument(document: RenderedDocument): Promise<void> {

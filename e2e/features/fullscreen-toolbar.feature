@@ -1,3 +1,4 @@
+@fullscreen
 Feature: Fullscreen toolbar positioning on macOS
 
   Scenario: Toolbar button moves to left edge in fullscreen mode
