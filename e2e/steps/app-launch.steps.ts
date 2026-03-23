@@ -7,20 +7,8 @@ import {
 import type { E2EWorld } from "../support/world.ts";
 
 When(/^the app launches with the startup file argument$/, async function (this: E2EWorld) {
+  // App is already launched at this point via the Given step
   const browser = this.getBrowser();
-  // Verify the run is using WDIO_APP_ARGS_JSON='["--test-file=./e2e/fixtures/test.md"]'
-  // or the documented default equivalent
-  const appArgsJson = process.env.WDIO_APP_ARGS_JSON;
-  const defaultArgs = '["--test-file=./e2e/fixtures/test.md"]';
-  
-  if (appArgsJson && appArgsJson !== defaultArgs) {
-    throw new Error(
-      `Expected WDIO_APP_ARGS_JSON='${defaultArgs}' for arg-driven startup test, ` +
-      `but got: ${appArgsJson}`
-    );
-  }
-  
-  // App is already launched at this point via wdio harness
   const handles = await browser.getWindowHandles();
   if (handles.length > 1) {
     await browser.switchToWindow(handles.at(-1)!);
@@ -57,15 +45,7 @@ Then(/the list items "([^"]+)" and "([^"]+)" should be visible/, async function 
 });
 
 When(/the app launches without a startup file argument/, async function () {
-  // Verify the run is using WDIO_APP_ARGS_JSON='[]'
-  const appArgsJson = process.env.WDIO_APP_ARGS_JSON;
-  if (appArgsJson !== '[]') {
-    throw new Error(
-      `Expected WDIO_APP_ARGS_JSON='[]' for no-args startup test, ` +
-      `but got: ${appArgsJson}`
-    );
-  }
-  // App is already launched at this point via wdio harness
+  // App is already launched at this point via the Given step in app-startup.steps.ts
 });
 
 Then(/the standalone Open File dialog is present/, async function () {

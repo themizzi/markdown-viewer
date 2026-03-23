@@ -3,7 +3,6 @@ import { expect } from "expect-webdriverio";
 import * as fs from "fs";
 import * as path from "path";
 import type { E2EWorld } from "../support/world.ts";
-import { openFileViaDialog } from "../support/macOpenFileDialog.ts";
 
 const fixturesDir = path.resolve(process.cwd(), "e2e/fixtures");
 
@@ -153,16 +152,6 @@ Then("the table of contents sidebar should show {string}", async function (this:
   await expect(sidebar).toBeDisplayed();
   const emptyMessage = await sidebar.$(".sidebar-empty");
   await expect(emptyMessage).toHaveText(message);
-});
-
-Given("the app is showing the {string} markdown document", async function (this: E2EWorld, filename: string) {
-  await openFileViaDialog(filename);
-  
-  const browser = this.getBrowser();
-  await browser.waitUntil(async () => {
-    const heading = await browser.$("h1");
-    return heading.isExisting();
-  }, { timeout: 10000 });
 });
 
 Then("the table of contents should contain {string}", async function (this: E2EWorld, text: string) {

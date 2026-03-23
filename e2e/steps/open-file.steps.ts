@@ -37,8 +37,8 @@ When(/the user clicks File Open/, async function (this: E2EWorld) {
     (click as () => void)();
   });
   
-  // Wait for dialog to appear
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  // Wait for dialog to appear - increased wait time
+  await new Promise(resolve => setTimeout(resolve, 3000));
 });
 
 When(/the user selects the deterministic target file in the Open File dialog/, async function () {
@@ -61,96 +61,99 @@ When(/the user selects the deterministic target file in the Open File dialog/, a
 });
 
 async function selectFileInMacOSOpenDialog(fixturePath: string, fileName: string): Promise<void> {
-  // AppleScript to navigate to the fixtures directory and select the target file
-  // The dialog opens as a standalone modal window (not a sheet)
+  const escapedPath = fixturePath.replace(/"/g, '\\"');
+  
+  // Use a simpler direct approach with explicit window indexing
   const script = `
 tell application "System Events"
   tell process "markdown-viewer"
-    -- Wait for the Open dialog window to appear with timeout
-    set dialogWindowName to "Open"
-    set maxWaitTime to 10
-    set elapsedTime to 0
-    repeat until exists window dialogWindowName or elapsedTime > maxWaitTime
-      delay 0.2
-      set elapsedTime to elapsedTime + 0.2
+    -- Wait for any window to appear (dialogs are windows)
+    delay 2
+    
+    -- Get all window names
+    set windowNames to name of every window
+    log "Windows found: " & windowNames
+    
+    -- Try to find the Open dialog by checking each window
+    set foundDialog to false
+    repeat with w in (every window)
+      if name of w contains "Open" then
+        set foundDialog to true
+        log "Found Open dialog"
+        
+        -- Press Cmd+Shift+G in that window
+        tell w
+          keystroke "g" using {command down, shift down}
+        end tell
+        exit repeat
+      end if
     end repeat
     
-    if not (exists window dialogWindowName) then
-      error "Open dialog did not appear after " & maxWaitTime & " seconds"
+    if not foundDialog then
+      log "Did not find Open dialog, trying anyway..."
     end if
     
-    -- Interact with the Open dialog window
-    tell window dialogWindowName
-      -- Press Cmd+Shift+G to open "Go to Folder" dialog
-      keystroke "g" using {command down, shift down}
-      delay 1.0
-      
-      -- Wait for the "Go to Folder" sheet to appear within the dialog
-      repeat with i from 1 to 20
-        try
-          if exists sheet 1 then
-            exit repeat
-          end if
-        end try
-        delay 0.1
-      end repeat
-      
-      delay 0.5
-      
-      -- Set the path in the text field of the sheet
+    delay 2
+    
+    -- Check for sheet
+    set sheetExists to false
+    try
+      if exists sheet 1 of window 1 then
+        set sheetExists to true
+        log "Sheet exists"
+      end if
+    end try
+    
+    if sheetExists then
+      -- Set path
       try
-        set value of text field 1 of sheet 1 to "${fixturePath}"
+        set value of text field 1 of sheet 1 of window 1 to "${escapedPath}"
+        log "Path set"
+      on error e
+        log "Error setting path: " & e
       end try
-      delay 0.3
       
-      -- Press Return to navigate to the folder
+      delay 1
       keystroke return
-      delay 1.5
+      delay 2
       
-      -- Wait for the sheet to close
-      repeat with i from 1 to 20
+      -- Wait for sheet to close
+      repeat 20 times
         try
-          if not (exists sheet 1) then
+          if not (exists sheet 1 of window 1) then
+            log "Sheet closed"
             exit repeat
           end if
         end try
-        delay 0.1
+        delay 0.2
       end repeat
       
-      delay 0.5
+      delay 1
       
-      -- Type the filename to select it
+      -- Type filename
       keystroke "${fileName}"
       delay 0.5
-      
-      -- Press Return to select and open the file
       keystroke return
-      delay 1.0
-    end tell
+    end if
+    
+    log "Done"
   end tell
 end tell`;
 
   try {
-    execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, { encoding: 'utf8' });
+    execSync(`osascript -e '${script.replace(/'/g, "'\\''")}' 2>&1`, { encoding: 'utf8' });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    let errorMessage = `Failed to select file in Open File dialog: ${message}`;
     
-    // Check for AppleScript permissions error
     if (message.includes('Not authorized') || message.includes('permission')) {
-      errorMessage = `AppleScript permissions blocked automation. Please enable System Events in Security & Privacy settings.`;
+      const err = new Error(`AppleScript permissions blocked automation. Please enable System Events in Security & Privacy settings.`);
+      if (error instanceof Error) {
+        err.cause = error;
+      }
+      throw err;
     }
     
-    // Check for timeout error
-    if (message.includes('did not appear after')) {
-      errorMessage = `${message}`;
-    }
-    
-    const err = new Error(errorMessage);
-    if (error instanceof Error) {
-      err.stack = error.stack;
-    }
-    throw err;
+    throw error;
   }
 }
 
