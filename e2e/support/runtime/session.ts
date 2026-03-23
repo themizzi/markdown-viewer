@@ -1,7 +1,6 @@
 import { startWdioSession } from "wdio-electron-service";
 import {
   createElectronCapabilities,
-  parseAppArgsFromEnv,
   resolveAppBinaryPath,
   withLinuxSandboxArgs,
 } from "./appConfig.ts";
@@ -29,15 +28,15 @@ export type RuntimeSessionConfig = {
   capabilities: WebdriverIO.Capabilities;
 };
 
-export function buildRuntimeSessionConfig(): RuntimeSessionConfig {
-  const rawAppArgs = parseAppArgsFromEnv();
-  const appArgs = withLinuxSandboxArgs(rawAppArgs);
+export function buildRuntimeSessionConfig(appArgs: string[] = []): RuntimeSessionConfig {
+  const rawAppArgs = appArgs;
+  const appArgsWithSandbox = withLinuxSandboxArgs(rawAppArgs);
   const appBinaryPath = resolveAppBinaryPath();
-  const capabilities = createElectronCapabilities(appBinaryPath, appArgs);
+  const capabilities = createElectronCapabilities(appBinaryPath, appArgsWithSandbox);
 
   return {
     appBinaryPath,
-    appArgs,
+    appArgs: appArgsWithSandbox,
     capabilities,
   };
 }

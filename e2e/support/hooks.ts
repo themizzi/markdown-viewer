@@ -1,7 +1,6 @@
 import { Before, After, BeforeAll, AfterAll, setDefaultTimeout } from "@cucumber/cucumber";
 import { execSync } from "node:child_process";
 import type { E2EWorld } from "./world.ts";
-import { buildRuntimeSessionConfig, createElectronSession } from "./runtime/session.ts";
 import { ensureFixturesDir, writeDeterministicFixtures } from "./runtime/fixtures.ts";
 import { assertPackagedBinaryExists, resolveAppBinaryPath } from "./runtime/appConfig.ts";
 import { startXvfbIfNeeded, stopXvfbIfStarted } from "./runtime/xvfb.ts";
@@ -62,10 +61,6 @@ BeforeAll(() => {
 Before(async function (this: E2EWorld) {
   ensureFixturesDir();
   writeDeterministicFixtures();
-
-  const { capabilities } = buildRuntimeSessionConfig();
-  const browser = await createElectronSession(capabilities);
-  this.setBrowser(browser);
 });
 
 After(async function (this: E2EWorld) {
